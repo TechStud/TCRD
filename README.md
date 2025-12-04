@@ -28,10 +28,10 @@ It runs directly in your web browser to fetch up to **3 years** of receipt histo
 
 ### Instructions
 
-**1. Log In**
-Go to your regional Costco website (e.g., [Costco.com](https://www.costco.com)) and log in to your account.
+**1. Log In to your Costco Account**
+Go to your regional Costco website (e.g., [Costco.ca](https://www.costco.ca), [Costco.com](https://www.costco.com), ...) and log in to your account.
 
-**2. Navigate to "In-Warehouse" Orders**
+**2. Navigate to Orders & Returns -> In-Warehouse**
 Click on **Orders & Returns** in the top menu, then select the tab labeled **In-Warehouse**.
 > *Note: You must be on this specific page for the script to work.*
 
@@ -70,7 +70,7 @@ The script automatically generates filenames based on the data found:
 **Note on Saving:**
 * **Chrome/Edge:** A "Save As" window will pop up, allowing you to overwrite your old file if you choose.
 * **Firefox/Safari:** The file will automatically download to your "Downloads" folder. You may need to manually delete the old version.
-* 💡 **TIP:** All browsers have an option to open the Save File dialog interface when downloading files by default. You just need to enable it within your browser... In your browser go to: Settings -> Downloads -> Enable the related 'Ask where to save each file before downloading' option.
+* 💡 **TIP:** All browsers have an option to open the Save File dialog interface when downloading files by default. If not enabled, you may simply need to enable it... In your browser go to: Settings -> Downloads -> Enable the related 'Ask where to save each file before downloading' option.
 
 ---
 
