@@ -73,7 +73,12 @@ The script automatically generates filenames based on the data found:
 * 💡 **TIP:** All browsers have an option to open the Save File dialog interface when downloading files by default. If not enabled, you may simply need to enable it... In your browser go to: Settings -> Downloads -> Enable the related 'Ask where to save each file before downloading' option.
 
 ---
+## ⚠️ Privacy & Liability Disclaimer
+* **Sensitive Data:** The downloaded JSON file contains your shopping history, partial payment information, and membership numbers. Keep this file secure. Do not share it publicly.
+* **Terms of Use:** This script is an unofficial tool for personal archiving. It is not endorsed by Costco Wholesale Corporation.
+* **Liability:** The author (TechStud) is not responsible for any data discrepancies, missed receipts, or account limitations imposed by Costco. Use at your own risk.
 
+---
 ## 🤓 For Advanced Users
 
 ### The Merging Logic
@@ -125,3 +130,12 @@ The output is a array of objects. Example:
     ...
   }
 ]
+```
+---
+## 🤝 Contributing
+
+Found a bug? Want to add new data fields?
+* Fork this repository.
+* Create a feature branch (git checkout -b feature/AmazingFeature).
+* Commit your changes.
+* Open a Pull Request.
