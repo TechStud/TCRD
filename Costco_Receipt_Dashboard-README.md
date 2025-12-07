@@ -2,7 +2,7 @@
 
 A client-side web application for visualizing, searching, and analyzing Costco digital receipt data (`.json`). This dashboard transforms raw JSON exports into a highly readable, interactive ledger with financial breakdowns, tax auditing, and spending analytics.
 
-### 🚀 Current State (v5.2)
+### 🚀 Current State (v0.5.2)
 
 The project has evolved from a simple list viewer into a robust financial audit tool. It features a "Dual-Mode" rendering engine that switches between a **History View** (grouped by shopping trip) and a **Search View** (flat item list) for granular filtering.
 
@@ -47,25 +47,25 @@ Individual item rows utilize a strict 4-column CSS Grid layout for perfect verti
 
 ### 📋 Complete Changelog
 
-* **v5.2 (Current):**
+* **v0.5.2 (Current):**
     * Refined `price-tax-detail` layout (flipped order with Final Price).
     * Dynamic Tax Sign logic (suppresses double negatives on refunds).
     * Moved "Saved" badge to sit inline with Price for better scanning.
     * Standardized font sizes across the "Receipt Header" bar.
-* **v5.1:** Fixed CSS Grid alignment issues by enforcing container rendering for empty data cells.
-* **v5.0:** Implemented "Horizontal Spread" layout for pricing math.
-* **v4.0:** Introduced Department Gating to prevent false-positive weight calculations on hardware items.
-* **v3.0:** * Switched Item Rows from Table Cells to **CSS Grid** for strict alignment.
+* **v0.5.1:** Fixed CSS Grid alignment issues by enforcing container rendering for empty data cells.
+* **v0.5.0:** Implemented "Horizontal Spread" layout for pricing math.
+* **v0.4.0:** Introduced Department Gating to prevent false-positive weight calculations on hardware items.
+* **v0.3.0:** * Switched Item Rows from Table Cells to **CSS Grid** for strict alignment.
     * Added **Markdown detection** (.97 logic) with purple badges.
     * Implemented Imperial/Metric dual display for Canadian warehouses.
-* **v2.0:** * **Major Architecture Overhaul:** Switched from a Flat List to "Grouped History" view.
+* **v0.2.0:** * **Major Architecture Overhaul:** Switched from a Flat List to "Grouped History" view.
     * Added Receipt Header bars (Sales vs Refunds).
     * Implemented **Lazy Loading** (Infinite Scroll) for performance.
     * Added Date Picker and Timezone-agnostic parsing.
-* **v1.0:** * Complete rewrite from jQuery to Vanilla JS & Bootstrap 5.
+* **v0.1.0:** * Complete rewrite from jQuery to Vanilla JS & Bootstrap 5.
     * Added **Drag & Drop** file zone.
     * Fixed core financial accuracy by reading root totals instead of line sums.
-* **v0.1 (Legacy):** Initial prototype using jQuery. Basic file parsing and bar chart visualization.
+* **v0.0.1 (Legacy):** Initial prototype using jQuery. Basic file parsing and bar chart visualization.
 
 ### 🔮 Future Roadmap
 * *Potential:* Export filtered views to CSV.
