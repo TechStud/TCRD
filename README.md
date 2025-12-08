@@ -1,4 +1,4 @@
-# TechStud's Costco Receipt Downloader and Dashboard
+# TechStud's Costco Receipt Downloader & Dashboard
 
 **An open-source, client-side solution for digitally archiving and analyzing your Costco in-warehouse receipt data.**
 
