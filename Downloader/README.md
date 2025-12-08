@@ -2,7 +2,7 @@
 
 ![Version](https://img.shields.io/badge/version-1.2.0-blue.svg) ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-**TCRD** is a client-side JavaScript tool that simplifies the process of retrieving and archiving your Costco in-warehouse receipts. 
+**TCRD** is a client-side JavaScript utility designed to extract and archive your Costco in-warehouse receipts, saving the raw data in a standardized JSON format.
 
 It runs directly in your web browser to fetch up to **3 years** of data-rich receipt history, exporting it in JSON format, and intelligently merges any new receipt data with your existing archives (_if you select an existing Costco Receipt file_) to prevent duplicates.
 
