@@ -2,9 +2,9 @@
 
 A client-side web application for visualizing, searching, and analyzing Costco digital receipt data (`.json`). This dashboard transforms raw JSON exports into a highly readable, interactive ledger with financial breakdowns, tax auditing, and spending analytics.
 
-### 🚀 Current State (v0.5.2)
+### 🚀 Current State
 
-The project has evolved from a simple list viewer into a robust financial audit tool. It features a "Dual-Mode" rendering engine that switches between a **History View** (grouped by shopping trip) and a **Search View** (flat item list) for granular filtering.
+The project has evolved from a simple list viewer into a robust financial audit tool. It features a "Dual-Mode" rendering engine that switches between a **History View** (_grouped by shopping trip_) and a **Search View** (_flat item list_) for granular filtering.
 
 ### ✨ Key Features
 
@@ -47,7 +47,11 @@ Individual item rows utilize a strict 4-column CSS Grid layout for perfect verti
 
 ### 📋 Complete Changelog
 
-* **v0.5.2 (Current):**
+* **v0.5.4 (Current):**
+   * Enhancing styles and improving filter functionality. 
+   * Adjusted layout and added drag-and-drop support for file uploads.
+   * Adjusted Receipt layout and rendering logic for better (UX) user experience.
+* **v0.5.2:**
     * Refined `price-tax-detail` layout (flipped order with Final Price).
     * Dynamic Tax Sign logic (suppresses double negatives on refunds).
     * Moved "Saved" badge to sit inline with Price for better scanning.
