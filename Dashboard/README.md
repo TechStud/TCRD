@@ -1,5 +1,7 @@
 # Costco Receipt Dashboard - README
 
+![Version](https://img.shields.io/badge/version-0.5.4-blue.svg) ![License](https://img.shields.io/badge/license-MIT-green.svg)
+
 A client-side web application for visualizing, searching, and analyzing Costco digital receipt data (`.json`). This dashboard transforms raw JSON exports into a highly readable, interactive ledger with financial breakdowns, tax auditing, and spending analytics.
 
 ### 🚀 Current State
