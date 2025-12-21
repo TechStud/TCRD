@@ -56,7 +56,7 @@ Individual item rows utilize a strict 4-column CSS Grid layout for perfect verti
 
 ### 📋 Complete Changelog
 
-* **v0.5.4 (Current):**
+* **v0.5.5 (Current):**
    * Enhancing styles and improving filter functionality. 
    * Adjusted layout and added drag-and-drop support for file uploads.
    * Adjusted Receipt layout and rendering logic for better (UX) user experience.
