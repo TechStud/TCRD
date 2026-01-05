@@ -1,6 +1,6 @@
 # TechStud's Costco Receipt Downloader (TCRD)
 
-![Version](https://img.shields.io/badge/version-1.2.0-blue.svg) ![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Version](https://img.shields.io/badge/version-1.2.2-blue.svg) ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 **TCRD** is a client-side JavaScript utility designed to extract and archive your Costco in-warehouse receipts, saving the raw data in a standardized JSON format.
 
@@ -122,7 +122,11 @@ The script uses a composite key of `MembershipNumber` + `TransactionBarcode` to 
 
 ### JSON Structure
 The output is an array of objects. Below is an example of a single **Sales Receipt** (_Refund Receipt is the same_):
-```json
+
+<details>
+  <summary>Click to exand...</summary>
+
+  ```json
 [  
   {
     "documentType": "WarehouseReceiptDetail",
@@ -685,9 +689,13 @@ The output is an array of objects. Below is an example of a single **Sales Recei
     ]
   }
 ]
+
 ```
----
-## 🤝 Contributing
+
+</details>
+
+  ---
+  ## 🤝 Contributing
 
 Found a bug? Want to add new data fields?
 * Fork this repository.
