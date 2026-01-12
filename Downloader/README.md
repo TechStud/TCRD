@@ -1,6 +1,6 @@
 # TechStud's Costco Receipt Downloader (TCRD)
 
-![Version](https://img.shields.io/badge/version-1.2.2-blue.svg) ![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Version](https://img.shields.io/badge/version-1.2.5-blue.svg) ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 **TCRD** is a client-side JavaScript utility designed to extract and archive your Costco in-warehouse receipts, saving the raw data in a standardized JSON format.
 
