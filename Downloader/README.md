@@ -41,7 +41,8 @@ Running directly in your web browser, it will fetch up to **3 years** of data-ri
 - Then, click on the tab at the top labeled **"Console"**.
 
 **4. Run the Script**
-- Copy the entire code from **[costco_receipt_downloader.js](costco_receipt_downloader.js)** in this repository. Paste it into the Console area and press **Enter**.
+- Copy the entire code from **[costco_receipt_downloader.js](costco_receipt_downloader.js)** in this repository.
+- Paste it into the Console area in your browser and press **Enter**.
 
 **5. Choose Your Action**
 - Look at the bottom-right corner of the Costco webpage. You will see two new buttons:
@@ -121,10 +122,38 @@ The script uses a composite key of `MembershipNumber` + `TransactionBarcode` to 
 4.  **Dedupe:** Iterates through the merged list. If a conflict is found, it prioritizes the *existing* local data (assuming you may have manually edited it), though usually, the data is identical.
 
 ### JSON Structure
-The output is an array of objects. Below is an example of a single **Sales Receipt** (_Refund Receipt is the same_):
+Reviewing the data, it appears;
+
+  **Receipts Are Ledger Documents**
+  - Item entries are ledger lines, not products
+  - A single purchase may span multiple lines
+  
+  **Multiple Economic Roles**
+  - Item lines may represent: Products, Coupons, Environmental fees, Refund adjustments, etc.
+  - Roles are not explicitly typed.
+  
+  **Coupons Exist in Parallel Forms**
+  - As item ledger lines
+  - As entries in couponArray
+  - Neither is canonical alone.
+  
+  **Item Numbers Are Contextual**
+  - Item numbers identify ledger lines
+  - They do not represent stable product concepts
+  
+  **Quantity & Price Are Non‑Semantic**
+  - Units may be negative or abstract
+  - Unit price may not match extended amounts
+  
+  **Refunds Are First‑Class Transactions**
+  - Refunds are independent receipts
+  - They may include positive coupon lines
+
+
+Below is an example of a single **Sales Receipt** (_Refund Receipts have a similar layout_):
 
 <details>
-  <summary>Click to exand...</summary>
+  <summary>Click to expand...</summary>
 
   ```json
 [  
