@@ -11,7 +11,7 @@
         
         /* Drag & Drop Styles */
         #initial-view { min-height: 80vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #drop-zone { border: 3px dashed #ced4da; border-radius: 15px; padding: 3rem; text-align: center; background-color: white; transition: all 0.2s ease; cursor: pointer; width: 100%; max-width: 600px; }
+        #drop-zone { border: 3px dashed #ced4da; border-radius: 15px; padding: 3rem; text-align: center; background-color: white; transition: all 0.2s ease; cursor: pointer; width: 100%; max-width: 60[...]
         #drop-zone:hover, #drop-zone.dragover { border-color: #0d6efd; background-color: #f1f8ff; }
 
         /* Dashboard Styles */
@@ -22,19 +22,21 @@
         .stat-sub { border-color: #198754; }
 
         /* Filter Controls */
-        .filter-btn { font-size: 0.75rem; border-radius: 20px; padding: 4px 12px; margin-left: 5px; border: 1px solid #dee2e6; background-color: white; color: #6c757d; cursor: pointer; transition: all 0.2s ease; }
+        .filter-btn { font-size: 0.75rem; border-radius: 20px; padding: 4px 12px; margin-left: 5px; border: 1px solid #dee2e6; background-color: white; color: #6c757d; cursor: pointer; transition: all[...]
         .filter-btn:hover { background-color: #f8f9fa; }
         .filter-btn.active-refund { background-color: #dc3545; color: white; border-color: #dc3545; }
         .filter-btn.active-markdown { background-color: #6f42c1; color: white; border-color: #6f42c1; }
         .filter-btn.active-discount { background-color: #198754; color: white; border-color: #198754; }
         
         #dateFilter { font-size: 0.85rem; padding: 4px 8px; border-radius: 4px; border: 1px solid #ced4da; max-width: 220px; }
-        #searchInput { max-width: 350px; } 
+        #searchInput { max-width: 350px; }
+        
+        .clear-filters-btn { font-size: 0.75rem; border-radius: 4px; padding: 4px 8px; margin-left: 8px; }
 
         /* Badges */
         .badge-discount { font-size: 0.7rem; background-color: #198754; color: white; padding: 1px 5px; border-radius: 4px; margin-right: 6px; vertical-align: middle; white-space: nowrap; }
         .badge-refund { font-size: 0.7rem; background-color: #dc3545; color: white; padding: 1px 5px; border-radius: 4px; margin-right: 5px; text-transform: uppercase; vertical-align: middle; }
-        .badge-markdown { font-size: 0.7rem; background-color: #6f42c1; color: white; padding: 1px 5px; border-radius: 4px; margin-left: 8px; text-transform: uppercase; vertical-align: middle; font-weight: 600; }
+        .badge-markdown { font-size: 0.7rem; background-color: #6f42c1; color: white; padding: 1px 5px; border-radius: 4px; margin-left: 8px; text-transform: uppercase; vertical-align: middle; font-we[...]
 
         /* --- ITEM GRID LAYOUT --- */
         .item-grid {
@@ -100,7 +102,7 @@
         #loadMoreBtn { width: 100%; border-radius: 0 0 5px 5px; font-weight: 600; }
 
         /* Loading indicator */
-        .loading-spinner { display: inline-block; width: 1rem; height: 1rem; border: 2px solid #f3f3f3; border-top: 2px solid #0d6efd; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 0.5rem; }
+        .loading-spinner { display: inline-block; width: 1rem; height: 1rem; border: 2px solid #f3f3f3; border-top: 2px solid #0d6efd; border-radius: 50%; animation: spin 1s linear infinite; margin-ri[...]
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
@@ -135,9 +137,9 @@
 
     <div class="container">
         <div class="row mb-4">
-            <div class="col-md-4"><div class="card stat-card stat-total mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Total</small><h2 id="displayTotal" class="fw-bold">—</h2></div></div></div>
-            <div class="col-md-4"><div class="card stat-card stat-sub mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Net Items</small><h2 id="displaySubtotal" class="fw-bold">—</h2></div></div></div>
-            <div class="col-md-4"><div class="card stat-card stat-tax mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Tax</small><h2 id="displayTax" class="fw-bold">—</h2></div></div></div>
+            <div class="col-md-4"><div class="card stat-card stat-total mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Total</small><h2 id="displayTotal" c[...]
+            <div class="col-md-4"><div class="card stat-card stat-sub mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Net Items</small><h2 id="displaySubtotal" c[...]
+            <div class="col-md-4"><div class="card stat-card stat-tax mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Tax</small><h2 id="displayTax" class="[...]
         </div>
 
         <div class="card shadow-sm mb-4">
@@ -155,6 +157,7 @@
                         <button class="filter-btn" id="filterRefund" onclick="toggleFilter('refund')" aria-label="Toggle refunds filter" aria-pressed="false">Refunds</button>
                         <button class="filter-btn" id="filterMarkdown" onclick="toggleFilter('markdown')" aria-label="Toggle markdowns filter" aria-pressed="false">Markdowns</button>
                         <button class="filter-btn" id="filterDiscount" onclick="toggleFilter('discount')" aria-label="Toggle discounts filter" aria-pressed="false">Discounts</button>
+                        <button id="clearFiltersBtn" class="btn btn-sm btn-outline-warning clear-filters-btn d-none" onclick="clearAllFilters()" aria-label="Clear all filters and search">Clear</button>
                     </div>
                 </div>
             </div>
@@ -198,7 +201,8 @@
         displayTotal: document.getElementById('displayTotal'),
         displaySubtotal: document.getElementById('displaySubtotal'),
         displayTax: document.getElementById('displayTax'),
-        receiptCountLabel: document.getElementById('receiptCountLabel')
+        receiptCountLabel: document.getElementById('receiptCountLabel'),
+        clearFiltersBtn: document.getElementById('clearFiltersBtn')
     };
 
     // --- State ---
@@ -259,6 +263,37 @@
             btn.classList.remove(activeClass);
             btn.setAttribute('aria-pressed', 'false');
         }
+        updateClearButtonVisibility();
+        handleSearchOrFilter();
+    }
+
+    function updateClearButtonVisibility() {
+        const hasSearch = DOM.searchInput.value.length > 0;
+        const hasDateFilter = DOM.dateFilter.value !== '';
+        const hasActiveFilters = Object.values(activeFilters).some(v => v);
+        
+        if (hasSearch || hasDateFilter || hasActiveFilters) {
+            DOM.clearFiltersBtn.classList.remove('d-none');
+        } else {
+            DOM.clearFiltersBtn.classList.add('d-none');
+        }
+    }
+
+    function clearAllFilters() {
+        DOM.searchInput.value = '';
+        DOM.dateFilter.value = '';
+        activeFilters.refund = false;
+        activeFilters.markdown = false;
+        activeFilters.discount = false;
+
+        const filterBtns = ['filterRefund', 'filterMarkdown', 'filterDiscount'];
+        filterBtns.forEach(id => {
+            const btn = document.getElementById(id);
+            btn.classList.remove('active-refund', 'active-markdown', 'active-discount');
+            btn.setAttribute('aria-pressed', 'false');
+        });
+
+        DOM.clearFiltersBtn.classList.add('d-none');
         handleSearchOrFilter();
     }
 
@@ -270,6 +305,8 @@
 
         if (hasSearch || hasFilters) {
             DOM.loadMoreBtn.classList.add('d-none');
+            DOM.tbody.innerHTML = '';
+            renderedReceiptCount = 0;
             
             const filtered = globalFlatItems.filter(item => {
                 const itemDate = parseLocalData(item.date).date;
@@ -530,7 +567,14 @@
     // Debounced search
     DOM.searchInput.addEventListener('keyup', () => {
         clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(handleSearchOrFilter, CONFIG.SEARCH_DEBOUNCE_MS);
+        searchTimeout = setTimeout(() => {
+            updateClearButtonVisibility();
+            handleSearchOrFilter();
+        }, CONFIG.SEARCH_DEBOUNCE_MS);
+    });
+
+    DOM.dateFilter.addEventListener('change', () => {
+        updateClearButtonVisibility();
     });
 
     function processFile(file) {
@@ -749,6 +793,7 @@
                 
                 renderedReceiptCount = 0;
                 DOM.tbody.innerHTML = '';
+                DOM.clearFiltersBtn.classList.add('d-none');
                 loadMoreReceipts(); 
                 DOM.initialView.classList.add('d-none');
                 DOM.dashboardView.classList.remove('d-none');
