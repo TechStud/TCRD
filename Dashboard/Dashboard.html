@@ -140,33 +140,29 @@
             <div class="col-md-4"><div class="card stat-card stat-tax mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Tax</small><h2 id="displayTax" class="fw-bold">—</h2></div></div></div>
         </div>
 
-        <div class="row">
-            <div class="col-lg-12 mb-4">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header bg-white fw-bold">
-                        <div class="row g-2 align-items-center">
-                            <div class="col-auto">
-                                <select id="dateFilter" class="form-select form-select-sm" onchange="handleSearchOrFilter()" aria-label="Filter by date">
-                                    <option value="">All Dates</option>
-                                </select>
-                            </div>
-                            <div class="col">
-                                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Search items..." aria-label="Search receipts and items">
-                            </div>
-                            <div class="col-auto d-flex">
-                                <button class="filter-btn" id="filterRefund" onclick="toggleFilter('refund')" aria-label="Toggle refunds filter" aria-pressed="false">Refunds</button>
-                                <button class="filter-btn" id="filterMarkdown" onclick="toggleFilter('markdown')" aria-label="Toggle markdowns filter" aria-pressed="false">Markdowns</button>
-                                <button class="filter-btn" id="filterDiscount" onclick="toggleFilter('discount')" aria-label="Toggle discounts filter" aria-pressed="false">Discounts</button>
-                            </div>
-                        </div>
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white fw-bold">
+                <div class="row g-2 align-items-center">
+                    <div class="col-auto">
+                        <select id="dateFilter" class="form-select form-select-sm" onchange="handleSearchOrFilter()" aria-label="Filter by date">
+                            <option value="">All Dates</option>
+                        </select>
                     </div>
-                    <div class="card-body p-0 overflow-auto" style="max-height: 750px;" id="tableContainer">
-                        <table class="table table-hover mb-0" role="grid">
-                            <tbody id="itemsTableBody"></tbody>
-                        </table>
-                        <button id="loadMoreBtn" class="btn btn-light text-primary d-none" onclick="loadMoreReceipts()" aria-label="Load more receipts">Load More Receipts</button>
+                    <div class="col">
+                        <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Search items..." aria-label="Search receipts and items">
+                    </div>
+                    <div class="col-auto d-flex">
+                        <button class="filter-btn" id="filterRefund" onclick="toggleFilter('refund')" aria-label="Toggle refunds filter" aria-pressed="false">Refunds</button>
+                        <button class="filter-btn" id="filterMarkdown" onclick="toggleFilter('markdown')" aria-label="Toggle markdowns filter" aria-pressed="false">Markdowns</button>
+                        <button class="filter-btn" id="filterDiscount" onclick="toggleFilter('discount')" aria-label="Toggle discounts filter" aria-pressed="false">Discounts</button>
                     </div>
                 </div>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0" role="grid">
+                    <tbody id="itemsTableBody"></tbody>
+                </table>
+                <button id="loadMoreBtn" class="btn btn-light text-primary d-none w-100" onclick="loadMoreReceipts()" aria-label="Load more receipts">Load More Receipts</button>
             </div>
         </div>
     </div>
