@@ -29,9 +29,7 @@
         .filter-btn.active-discount { background-color: #198754; color: white; border-color: #198754; }
         
         #dateFilter { font-size: 0.85rem; padding: 4px 8px; border-radius: 4px; border: 1px solid #ced4da; max-width: 220px; }
-        #searchInput { max-width: 350px; }
-        
-        .clear-filters-btn { font-size: 0.75rem; border-radius: 4px; padding: 4px 8px; margin-left: 8px; }
+        #searchInput { max-width: 350px; } 
 
         /* Badges */
         .badge-discount { font-size: 0.7rem; background-color: #198754; color: white; padding: 1px 5px; border-radius: 4px; margin-right: 6px; vertical-align: middle; white-space: nowrap; }
@@ -157,7 +155,6 @@
                         <button class="filter-btn" id="filterRefund" onclick="toggleFilter('refund')" aria-label="Toggle refunds filter" aria-pressed="false">Refunds</button>
                         <button class="filter-btn" id="filterMarkdown" onclick="toggleFilter('markdown')" aria-label="Toggle markdowns filter" aria-pressed="false">Markdowns</button>
                         <button class="filter-btn" id="filterDiscount" onclick="toggleFilter('discount')" aria-label="Toggle discounts filter" aria-pressed="false">Discounts</button>
-                        <button id="clearFiltersBtn" class="btn btn-sm btn-outline-warning clear-filters-btn d-none" onclick="clearAllFilters()" aria-label="Clear all filters and search">Clear</button>
                     </div>
                 </div>
             </div>
@@ -201,8 +198,7 @@
         displayTotal: document.getElementById('displayTotal'),
         displaySubtotal: document.getElementById('displaySubtotal'),
         displayTax: document.getElementById('displayTax'),
-        receiptCountLabel: document.getElementById('receiptCountLabel'),
-        clearFiltersBtn: document.getElementById('clearFiltersBtn')
+        receiptCountLabel: document.getElementById('receiptCountLabel')
     };
 
     // --- State ---
@@ -263,37 +259,6 @@
             btn.classList.remove(activeClass);
             btn.setAttribute('aria-pressed', 'false');
         }
-        updateClearButtonVisibility();
-        handleSearchOrFilter();
-    }
-
-    function updateClearButtonVisibility() {
-        const hasSearch = DOM.searchInput.value.length > 0;
-        const hasDateFilter = DOM.dateFilter.value !== '';
-        const hasActiveFilters = Object.values(activeFilters).some(v => v);
-        
-        if (hasSearch || hasDateFilter || hasActiveFilters) {
-            DOM.clearFiltersBtn.classList.remove('d-none');
-        } else {
-            DOM.clearFiltersBtn.classList.add('d-none');
-        }
-    }
-
-    function clearAllFilters() {
-        DOM.searchInput.value = '';
-        DOM.dateFilter.value = '';
-        activeFilters.refund = false;
-        activeFilters.markdown = false;
-        activeFilters.discount = false;
-
-        const filterBtns = ['filterRefund', 'filterMarkdown', 'filterDiscount'];
-        filterBtns.forEach(id => {
-            const btn = document.getElementById(id);
-            btn.classList.remove('active-refund', 'active-markdown', 'active-discount');
-            btn.setAttribute('aria-pressed', 'false');
-        });
-
-        DOM.clearFiltersBtn.classList.add('d-none');
         handleSearchOrFilter();
     }
 
@@ -305,8 +270,6 @@
 
         if (hasSearch || hasFilters) {
             DOM.loadMoreBtn.classList.add('d-none');
-            DOM.tbody.innerHTML = '';
-            renderedReceiptCount = 0;
             
             const filtered = globalFlatItems.filter(item => {
                 const itemDate = parseLocalData(item.date).date;
@@ -567,14 +530,7 @@
     // Debounced search
     DOM.searchInput.addEventListener('keyup', () => {
         clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            updateClearButtonVisibility();
-            handleSearchOrFilter();
-        }, CONFIG.SEARCH_DEBOUNCE_MS);
-    });
-
-    DOM.dateFilter.addEventListener('change', () => {
-        updateClearButtonVisibility();
+        searchTimeout = setTimeout(handleSearchOrFilter, CONFIG.SEARCH_DEBOUNCE_MS);
     });
 
     function processFile(file) {
@@ -793,7 +749,6 @@
                 
                 renderedReceiptCount = 0;
                 DOM.tbody.innerHTML = '';
-                DOM.clearFiltersBtn.classList.add('d-none');
                 loadMoreReceipts(); 
                 DOM.initialView.classList.add('d-none');
                 DOM.dashboardView.classList.remove('d-none');
