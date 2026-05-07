@@ -11,7 +11,7 @@
         
         /* Drag & Drop Styles */
         #initial-view { min-height: 80vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #drop-zone { border: 3px dashed #ced4da; border-radius: 15px; padding: 3rem; text-align: center; background-color: white; transition: all 0.2s ease; cursor: pointer; width: 100%; max-width: 60[...]
+        #drop-zone { border: 3px dashed #ced4da; border-radius: 15px; padding: 3rem; text-align: center; background-color: white; transition: all 0.2s ease; cursor: pointer; width: 100%; max-width: 600px; }
         #drop-zone:hover, #drop-zone.dragover { border-color: #0d6efd; background-color: #f1f8ff; }
 
         /* Dashboard Styles */
@@ -22,7 +22,7 @@
         .stat-sub { border-color: #198754; }
 
         /* Filter Controls */
-        .filter-btn { font-size: 0.75rem; border-radius: 20px; padding: 4px 12px; margin-left: 5px; border: 1px solid #dee2e6; background-color: white; color: #6c757d; cursor: pointer; transition: all[...]
+        .filter-btn { font-size: 0.75rem; border-radius: 20px; padding: 4px 12px; margin-left: 5px; border: 1px solid #dee2e6; background-color: white; color: #6c757d; cursor: pointer; transition: all 0.2s ease; }
         .filter-btn:hover { background-color: #f8f9fa; }
         .filter-btn.active-refund { background-color: #dc3545; color: white; border-color: #dc3545; }
         .filter-btn.active-markdown { background-color: #6f42c1; color: white; border-color: #6f42c1; }
@@ -34,7 +34,7 @@
         /* Badges */
         .badge-discount { font-size: 0.7rem; background-color: #198754; color: white; padding: 1px 5px; border-radius: 4px; margin-right: 6px; vertical-align: middle; white-space: nowrap; }
         .badge-refund { font-size: 0.7rem; background-color: #dc3545; color: white; padding: 1px 5px; border-radius: 4px; margin-right: 5px; text-transform: uppercase; vertical-align: middle; }
-        .badge-markdown { font-size: 0.7rem; background-color: #6f42c1; color: white; padding: 1px 5px; border-radius: 4px; margin-left: 8px; text-transform: uppercase; vertical-align: middle; font-we[...]
+        .badge-markdown { font-size: 0.7rem; background-color: #6f42c1; color: white; padding: 1px 5px; border-radius: 4px; margin-left: 8px; text-transform: uppercase; vertical-align: middle; font-weight: 600; }
 
         /* --- ITEM GRID LAYOUT --- */
         .item-grid {
@@ -100,7 +100,7 @@
         #loadMoreBtn { width: 100%; border-radius: 0 0 5px 5px; font-weight: 600; }
 
         /* Loading indicator */
-        .loading-spinner { display: inline-block; width: 1rem; height: 1rem; border: 2px solid #f3f3f3; border-top: 2px solid #0d6efd; border-radius: 50%; animation: spin 1s linear infinite; margin-ri[...]
+        .loading-spinner { display: inline-block; width: 1rem; height: 1rem; border: 2px solid #f3f3f3; border-top: 2px solid #0d6efd; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 0.5rem; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
@@ -135,9 +135,9 @@
 
     <div class="container">
         <div class="row mb-4">
-            <div class="col-md-4"><div class="card stat-card stat-total mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Total</small><h2 id="displayTotal" c[...]
-            <div class="col-md-4"><div class="card stat-card stat-sub mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Net Items</small><h2 id="displaySubtotal" c[...]
-            <div class="col-md-4"><div class="card stat-card stat-tax mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Tax</small><h2 id="displayTax" class="[...]
+            <div class="col-md-4"><div class="card stat-card stat-total mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Total</small><h2 id="displayTotal" class="fw-bold">—</h2></div></div></div>
+            <div class="col-md-4"><div class="card stat-card stat-sub mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Net Items</small><h2 id="displaySubtotal" class="fw-bold">—</h2></div></div></div>
+            <div class="col-md-4"><div class="card stat-card stat-tax mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Tax</small><h2 id="displayTax" class="fw-bold">—</h2></div></div></div>
         </div>
 
         <div class="card shadow-sm mb-4">
