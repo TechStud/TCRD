@@ -6,13 +6,12 @@
     <title>Costco Receipt Dashboard v0.5.5</title>
     <link rel="icon" href="https://techstud.github.io/TCRDD/favicon.ico" type="image/x-icon">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         
         /* Drag & Drop Styles */
         #initial-view { min-height: 80vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #drop-zone { border: 3px dashed #ced4da; border-radius: 15px; padding: 3rem; text-align: center; background-color: white; transition: 0.2s; cursor: pointer; width: 100%; max-width: 600px; }
+        #drop-zone { border: 3px dashed #ced4da; border-radius: 15px; padding: 3rem; text-align: center; background-color: white; transition: all 0.2s ease; cursor: pointer; width: 100%; max-width: 600px; }
         #drop-zone:hover, #drop-zone.dragover { border-color: #0d6efd; background-color: #f1f8ff; }
 
         /* Dashboard Styles */
@@ -23,7 +22,7 @@
         .stat-sub { border-color: #198754; }
 
         /* Filter Controls */
-        .filter-btn { font-size: 0.75rem; border-radius: 20px; padding: 4px 12px; margin-left: 5px; border: 1px solid #dee2e6; background-color: white; color: #6c757d; cursor: pointer; transition: all 0.2s; font-weight: 600; white-space: nowrap; }
+        .filter-btn { font-size: 0.75rem; border-radius: 20px; padding: 4px 12px; margin-left: 5px; border: 1px solid #dee2e6; background-color: white; color: #6c757d; cursor: pointer; transition: all 0.2s ease; }
         .filter-btn:hover { background-color: #f8f9fa; }
         .filter-btn.active-refund { background-color: #dc3545; color: white; border-color: #dc3545; }
         .filter-btn.active-markdown { background-color: #6f42c1; color: white; border-color: #6f42c1; }
@@ -35,7 +34,7 @@
         /* Badges */
         .badge-discount { font-size: 0.7rem; background-color: #198754; color: white; padding: 1px 5px; border-radius: 4px; margin-right: 6px; vertical-align: middle; white-space: nowrap; }
         .badge-refund { font-size: 0.7rem; background-color: #dc3545; color: white; padding: 1px 5px; border-radius: 4px; margin-right: 5px; text-transform: uppercase; vertical-align: middle; }
-        .badge-markdown { font-size: 0.7rem; background-color: #6f42c1; color: white; padding: 1px 5px; border-radius: 4px; margin-left: 8px; text-transform: uppercase; vertical-align: middle; font-weight: bold; }
+        .badge-markdown { font-size: 0.7rem; background-color: #6f42c1; color: white; padding: 1px 5px; border-radius: 4px; margin-left: 8px; text-transform: uppercase; vertical-align: middle; font-weight: 600; }
 
         /* --- ITEM GRID LAYOUT --- */
         .item-grid {
@@ -99,13 +98,17 @@
         .rh-col-saved { min-width: 100px; text-align: right; color: #198754; margin-left: 10px; }
 
         #loadMoreBtn { width: 100%; border-radius: 0 0 5px 5px; font-weight: 600; }
+
+        /* Loading indicator */
+        .loading-spinner { display: inline-block; width: 1rem; height: 1rem; border: 2px solid #f3f3f3; border-top: 2px solid #0d6efd; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 0.5rem; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
 <div id="initial-view" class="container">
     <h1 class="mb-5 fw-bold text-primary">Costco Receipt Dashboard</h1>
-    <div id="drop-zone">
+    <div id="drop-zone" role="button" tabindex="0" aria-label="Drop zone for uploading receipt JSON files">
         <div class="mb-3">
             <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="bi bi-upload text-primary" viewBox="0 0 16 16">
                 <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
@@ -125,52 +128,43 @@
                 <small class="text-muted" id="receiptCountLabel">0 Receipts Found</small>
             </div>
             <div>
-                <button class="btn btn-sm btn-outline-secondary" onclick="location.reload()">Load Different File</button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="location.reload()" aria-label="Load a different file">Load Different File</button>
             </div>
         </div>
     </div>
 
     <div class="container">
         <div class="row mb-4">
-            <div class="col-md-4"><div class="card stat-card stat-total mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Total</small><h2 id="displayTotal" class="fw-bold mb-0">-</h2></div></div></div>
-            <div class="col-md-4"><div class="card stat-card stat-sub mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Net Items</small><h2 id="displaySubtotal" class="fw-bold mb-0">-</h2></div></div></div>
-            <div class="col-md-4"><div class="card stat-card stat-tax mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Tax</small><h2 id="displayTax" class="fw-bold mb-0">-</h2></div></div></div>
+            <div class="col-md-4"><div class="card stat-card stat-total mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Total</small><h2 id="displayTotal" class="fw-bold">—</h2></div></div></div>
+            <div class="col-md-4"><div class="card stat-card stat-sub mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Net Items</small><h2 id="displaySubtotal" class="fw-bold">—</h2></div></div></div>
+            <div class="col-md-4"><div class="card stat-card stat-tax mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Tax</small><h2 id="displayTax" class="fw-bold">—</h2></div></div></div>
         </div>
 
         <div class="row">
-            <div class="col-lg-8 mb-4">
+            <div class="col-lg-12 mb-4">
                 <div class="card shadow-sm h-100">
                     <div class="card-header bg-white fw-bold">
                         <div class="row g-2 align-items-center">
                             <div class="col-auto">
-                                <select id="dateFilter" class="form-select form-select-sm" onchange="handleSearchOrFilter()">
+                                <select id="dateFilter" class="form-select form-select-sm" onchange="handleSearchOrFilter()" aria-label="Filter by date">
                                     <option value="">All Dates</option>
                                 </select>
                             </div>
                             <div class="col">
-                                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Search items...">
+                                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Search items..." aria-label="Search receipts and items">
                             </div>
                             <div class="col-auto d-flex">
-                                <button class="filter-btn" id="filterRefund" onclick="toggleFilter('refund')">Refunds</button>
-                                <button class="filter-btn" id="filterMarkdown" onclick="toggleFilter('markdown')">Markdowns</button>
-                                <button class="filter-btn" id="filterDiscount" onclick="toggleFilter('discount')">Discounts</button>
+                                <button class="filter-btn" id="filterRefund" onclick="toggleFilter('refund')" aria-label="Toggle refunds filter" aria-pressed="false">Refunds</button>
+                                <button class="filter-btn" id="filterMarkdown" onclick="toggleFilter('markdown')" aria-label="Toggle markdowns filter" aria-pressed="false">Markdowns</button>
+                                <button class="filter-btn" id="filterDiscount" onclick="toggleFilter('discount')" aria-label="Toggle discounts filter" aria-pressed="false">Discounts</button>
                             </div>
                         </div>
                     </div>
                     <div class="card-body p-0 overflow-auto" style="max-height: 750px;" id="tableContainer">
-                        <table class="table table-hover mb-0">
+                        <table class="table table-hover mb-0" role="grid">
                             <tbody id="itemsTableBody"></tbody>
                         </table>
-                        <button id="loadMoreBtn" class="btn btn-light text-primary d-none" onclick="loadMoreReceipts()">Load More Receipts</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-4 mb-4">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header bg-white fw-bold">Top Spending (Net)</div>
-                    <div class="card-body">
-                        <canvas id="itemsChart"></canvas>
+                        <button id="loadMoreBtn" class="btn btn-light text-primary d-none" onclick="loadMoreReceipts()" aria-label="Load more receipts">Load More Receipts</button>
                     </div>
                 </div>
             </div>
@@ -178,39 +172,63 @@
     </div>
 </div>
 
-<input type="file" id="fileInput" accept=".json" class="d-none">
+<input type="file" id="fileInput" accept=".json" class="d-none" aria-label="File input for receipts">
 
 <script>
+    // --- CONFIG ---
+    const CONFIG = {
+        RECEIPT_BATCH_SIZE: 20,
+        WEIGHTED_DEPTS: [63, 12, 13, 19, 14, 34],
+        SEARCH_DEBOUNCE_MS: 300,
+        MAX_FILTERED_ITEMS: 500
+    };
+
+    // --- CURRENCY MAP ---
+    const CURRENCY_MAP = { 
+        'US':'USD', 'CN':'CAD', 'CA':'CAD', 'GB':'GBP', 'UK':'GBP', 
+        'JP':'JPY', 'KR':'KRW', 'MX':'MXN', 'AU':'AUD', 'TW':'TWD', 'IS':'ISK' 
+    };
+
     // --- Elements ---
-    const fileInput = document.getElementById('fileInput');
-    const dropZone = document.getElementById('drop-zone');
-    const initialView = document.getElementById('initial-view');
-    const dashboardView = document.getElementById('dashboard-view');
-    const searchInput = document.getElementById('searchInput');
-    const dateFilter = document.getElementById('dateFilter');
-    const loadMoreBtn = document.getElementById('loadMoreBtn');
-    const tbody = document.getElementById('itemsTableBody');
-    
+    const DOM = {
+        fileInput: document.getElementById('fileInput'),
+        dropZone: document.getElementById('drop-zone'),
+        initialView: document.getElementById('initial-view'),
+        dashboardView: document.getElementById('dashboard-view'),
+        searchInput: document.getElementById('searchInput'),
+        dateFilter: document.getElementById('dateFilter'),
+        loadMoreBtn: document.getElementById('loadMoreBtn'),
+        tbody: document.getElementById('itemsTableBody'),
+        displayTotal: document.getElementById('displayTotal'),
+        displaySubtotal: document.getElementById('displaySubtotal'),
+        displayTax: document.getElementById('displayTax'),
+        receiptCountLabel: document.getElementById('receiptCountLabel')
+    };
+
     // --- State ---
     let globalReceipts = []; 
     let globalFlatItems = []; 
-    let renderedReceiptCount = 0; 
-    const RECEIPT_BATCH_SIZE = 20; 
-    
-    let chartInstance = null;
-    let globalCurrency = 'USD'; 
-    let iso8601Override = true; 
+    let renderedReceiptCount = 0;
+    let globalCurrency = 'USD';
+    let searchTimeout = null;
 
-    // Config
-    const WEIGHTED_DEPTS = [63, 12, 13, 19, 14, 34]; 
     const activeFilters = { refund: false, markdown: false, discount: false };
     const userLocale = navigator.language || 'en-US';
-    const currencyMap = { 'US':'USD', 'CN':'CAD', 'CA':'CAD', 'GB':'GBP', 'UK':'GBP', 'JP':'JPY', 'KR':'KRW', 'MX':'MXN', 'AU':'AUD', 'TW':'TWD', 'IS':'ISK' };
 
-    // Helpers
+    // --- Helpers ---
     const money = (val, currencyCode = 'USD') => {
-        try { return new Intl.NumberFormat(userLocale, { style: 'currency', currency: currencyCode, currencyDisplay: 'narrowSymbol' }).format(val); } 
-        catch (e) { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val); }
+        try { 
+            return new Intl.NumberFormat(userLocale, { 
+                style: 'currency', 
+                currency: currencyCode, 
+                currencyDisplay: 'narrowSymbol' 
+            }).format(val); 
+        } catch (e) { 
+            return new Intl.NumberFormat('en-US', { 
+                style: 'currency', 
+                currency: 'USD' 
+            }).format(val); 
+        }
     };
 
     const parseLocalData = (isoStr) => {
@@ -221,10 +239,16 @@
         return { date: dPart, time: tPart };
     };
 
-    const formatDate = (dateStr) => {
-        if(!dateStr) return '';
-        const d = new Date(dateStr);
-        return iso8601Override ? d.toLocaleDateString('sv-SE') : d.toLocaleDateString(userLocale); 
+    /**
+     * Validates receipt data structure
+     */
+    const validateReceiptData = (receipt) => {
+        if (!receipt) return false;
+        if (!receipt.itemArray || !Array.isArray(receipt.itemArray)) {
+            console.warn('Invalid receipt structure: missing itemArray', receipt);
+            return false;
+        }
+        return true;
     };
 
     // --- Filter Logic ---
@@ -232,19 +256,24 @@
         activeFilters[type] = !activeFilters[type];
         const btn = document.getElementById('filter' + type.charAt(0).toUpperCase() + type.slice(1));
         const activeClass = 'active-' + type;
-        if (activeFilters[type]) btn.classList.add(activeClass);
-        else btn.classList.remove(activeClass);
+        if (activeFilters[type]) {
+            btn.classList.add(activeClass);
+            btn.setAttribute('aria-pressed', 'true');
+        } else {
+            btn.classList.remove(activeClass);
+            btn.setAttribute('aria-pressed', 'false');
+        }
         handleSearchOrFilter();
     }
 
     function handleSearchOrFilter() {
-        const term = searchInput.value.toLowerCase();
-        const selectedDate = dateFilter.value;
+        const term = DOM.searchInput.value.toLowerCase();
+        const selectedDate = DOM.dateFilter.value;
         const hasFilters = Object.values(activeFilters).some(v => v);
         const hasSearch = term.length > 0;
 
         if (hasSearch || hasFilters) {
-            loadMoreBtn.classList.add('d-none');
+            DOM.loadMoreBtn.classList.add('d-none');
             
             const filtered = globalFlatItems.filter(item => {
                 const itemDate = parseLocalData(item.date).date;
@@ -263,17 +292,16 @@
                 
                 return true;
             });
-            renderFlatList(filtered.slice(0, 500)); 
-        } 
-        else {
-            tbody.innerHTML = ''; 
+            renderFlatList(filtered.slice(0, CONFIG.MAX_FILTERED_ITEMS)); 
+        } else {
+            DOM.tbody.innerHTML = ''; 
             renderedReceiptCount = 0;
             if (selectedDate) {
                 const dateBatch = globalReceipts.filter(r => parseLocalData(r.meta.fullDateString).date === selectedDate);
                 renderGroupedList(dateBatch);
-                loadMoreBtn.classList.add('d-none');
+                DOM.loadMoreBtn.classList.add('d-none');
             } else {
-                loadMoreBtn.classList.remove('d-none');
+                DOM.loadMoreBtn.classList.remove('d-none');
                 loadMoreReceipts();
             }
         }
@@ -281,20 +309,19 @@
 
     function loadMoreReceipts() {
         const start = renderedReceiptCount;
-        const end = start + RECEIPT_BATCH_SIZE;
+        const end = start + CONFIG.RECEIPT_BATCH_SIZE;
         const batch = globalReceipts.slice(start, end);
         
         if (batch.length === 0) {
-            loadMoreBtn.classList.add('d-none');
+            DOM.loadMoreBtn.classList.add('d-none');
             return;
         }
         renderGroupedList(batch);
         renderedReceiptCount += batch.length;
-        if (renderedReceiptCount >= globalReceipts.length) loadMoreBtn.classList.add('d-none');
+        if (renderedReceiptCount >= globalReceipts.length) DOM.loadMoreBtn.classList.add('d-none');
     }
 
     // --- View Generators ---
-
     function renderGroupedList(receiptsBatch) {
         receiptsBatch.forEach(r => {
             const isRefund = r.meta.txType === "Refund";
@@ -310,8 +337,8 @@
                     <td colspan="4" class="receipt-header-cell ${colorClass}">
                         <div class="rh-flex-container">
                             <div class="rh-col-datetime">${dt.date} &nbsp; ${dt.time}</div>
-                            <div class="rh-col-wh">${r.meta.warehouse}</div>
-                            <div class="rh-col-barcode">${r.meta.barcode}</div>
+                            <div class="rh-col-wh">${escapeHtml(r.meta.warehouse)}</div>
+                            <div class="rh-col-barcode">${escapeHtml(r.meta.barcode)}</div>
                             <div class="rh-col-items">Items: ${r.meta.itemCount}</div>
                             <div class="rh-col-tax">Tax: ${money(r.meta.tax, cur)}</div>
                             <div class="rh-col-total">${money(r.meta.total, cur)}</div>
@@ -320,20 +347,20 @@
                     </td>
                 </tr>
             `;
-            tbody.insertAdjacentHTML('beforeend', headerRow);
+            DOM.tbody.insertAdjacentHTML('beforeend', headerRow);
 
             r.items.forEach(item => {
                 const rowHtml = buildRowHtml(item, false); 
-                tbody.insertAdjacentHTML('beforeend', rowHtml);
+                DOM.tbody.insertAdjacentHTML('beforeend', rowHtml);
             });
         });
     }
 
     function renderFlatList(items) {
-        tbody.innerHTML = '';
+        DOM.tbody.innerHTML = '';
         items.forEach(item => {
             const rowHtml = buildRowHtml(item, true); 
-            tbody.insertAdjacentHTML('beforeend', rowHtml);
+            DOM.tbody.insertAdjacentHTML('beforeend', rowHtml);
         });
     }
 
@@ -342,18 +369,17 @@
         const cur = item.currency || 'USD'; 
         let rowClass = isRefund ? 'row-refund' : '';
         
-        let descHtml = `<span class="ig-desc">${item.description}</span>`;
+        let descHtml = `<span class="ig-desc">${escapeHtml(item.description)}</span>`;
         if (item.isMarkdown) descHtml += `<span class="badge-markdown">Markdown</span>`;
         
         let metaHtml = '';
         if (showContext) {
             const dt = parseLocalData(item.date);
-            metaHtml = `<div class="ig-meta"><strong>${dt.date}</strong> &bull; ${item.warehouse} &bull; #${item.itemNumber}</div>`;
+            metaHtml = `<div class="ig-meta"><strong>${dt.date}</strong> &bull; ${escapeHtml(item.warehouse)} &bull; #${escapeHtml(String(item.itemNumber))}</div>`;
         } else {
-            metaHtml = `<div class="ig-meta">#${item.itemNumber}</div>`;
+            metaHtml = `<div class="ig-meta">#${escapeHtml(String(item.itemNumber))}</div>`;
         }
 
-        // --- COL 1: DESC ---
         const colDesc = `<div>${descHtml}${metaHtml}</div>`;
 
         // --- COL 2: UNITS ---
@@ -418,7 +444,6 @@
         `;
     }
 
-    // Helper
     function getUnitStrings(item, cur) {
         let l1 = '', l2 = '';
         const isRefund = item.txType === "Refund";
@@ -429,26 +454,21 @@
             const actualTotal = Math.abs(item.originalAmount);
             const isMathValid = Math.abs(expectedTotal - actualTotal) < 0.05;
 
-            // CASE A: Standard Qty
             if (qty > 1 && isMathValid) {
-                // Check if discounted
                 if (item.discountAmount !== 0 && !isRefund) {
                     const effectiveUnit = Math.abs(item.netAmount / qty);
-                    // Updated: Effective First, Strike Second
                     l1 = `${qty} @ <span class="unit-effective">${money(effectiveUnit, cur)}/ea</span> <span class="unit-strike">${money(item.unitPrice, cur)}/ea</span>`;
                 } else {
                     l1 = `${qty} @ ${money(item.unitPrice, cur)}/ea`;
                 }
             } 
-            // CASE B: Weighted
             else {
-                const isAllowedDept = WEIGHTED_DEPTS.includes(item.dept);
+                const isAllowedDept = CONFIG.WEIGHTED_DEPTS.includes(item.dept);
                 const isMathMismatch = Math.abs(item.originalAmount - item.unitPrice) > 0.02;
 
                 if (isAllowedDept && isMathMismatch) {
                     const weight = Math.abs(item.originalAmount / item.unitPrice);
                     const effectivePrice = Math.abs(item.netAmount / weight);
-                    
                     const prefix = qty > 1 ? `${qty} = ` : '';
 
                     if (item.country === "CN") {
@@ -463,7 +483,6 @@
                         let displayPriceLb = `${money(pLbOrig, cur)}/lb`;
 
                         if (item.discountAmount !== 0 && !isRefund) {
-                            // Updated: Effective First, Strike Second
                             displayPriceKg = `<span class="unit-effective">${money(pKgEff, cur)}/kg</span> <span class="unit-strike">${displayPriceKg}</span>`;
                             displayPriceLb = `<span class="unit-effective">${money(pLbEff, cur)}/lb</span> <span class="unit-strike">${displayPriceLb}</span>`;
                         }
@@ -481,16 +500,51 @@
         return { line1: l1, line2: l2 };
     }
 
+    // --- Security Helper ---
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
     // --- Drag & Drop ---
-    dropZone.addEventListener('click', () => fileInput.click());
-    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
-    dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('dragover'); }); 
-    dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); if (e.dataTransfer.files.length) processFile(e.dataTransfer.files[0]); });
-    fileInput.addEventListener('change', (e) => { if (e.target.files.length) processFile(e.target.files[0]); });
-    searchInput.addEventListener('keyup', handleSearchOrFilter);
+    DOM.dropZone.addEventListener('click', () => DOM.fileInput.click());
+    DOM.dropZone.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            DOM.fileInput.click();
+        }
+    });
+    DOM.dropZone.addEventListener('dragover', (e) => { 
+        e.preventDefault(); 
+        DOM.dropZone.classList.add('dragover'); 
+    });
+    DOM.dropZone.addEventListener('dragleave', () => { 
+        DOM.dropZone.classList.remove('dragover'); 
+    }); 
+    DOM.dropZone.addEventListener('drop', (e) => { 
+        e.preventDefault(); 
+        DOM.dropZone.classList.remove('dragover'); 
+        if (e.dataTransfer.files.length) processFile(e.dataTransfer.files[0]); 
+    });
+    DOM.fileInput.addEventListener('change', (e) => { 
+        if (e.target.files.length) processFile(e.target.files[0]); 
+    });
+    
+    // Debounced search
+    DOM.searchInput.addEventListener('keyup', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(handleSearchOrFilter, CONFIG.SEARCH_DEBOUNCE_MS);
+    });
 
     function processFile(file) {
         const reader = new FileReader();
+        
+        reader.onerror = () => {
+            console.error('File reading failed');
+            alert("Error reading file. Please try again.");
+        };
+
         reader.onload = (e) => {
             try {
                 const json = JSON.parse(e.target.result);
@@ -502,11 +556,20 @@
                 
                 const rawReceipts = Array.isArray(json) ? json : [json];
                 
-                if(rawReceipts.length > 0 && rawReceipts[0].warehouseCountry) {
-                    globalCurrency = currencyMap[rawReceipts[0].warehouseCountry] || 'USD';
+                if(rawReceipts.length === 0) {
+                    throw new Error('No receipts found in file');
                 }
 
-                rawReceipts.forEach(receipt => {
+                if(rawReceipts[0].warehouseCountry) {
+                    globalCurrency = CURRENCY_MAP[rawReceipts[0].warehouseCountry] || 'USD';
+                }
+
+                rawReceipts.forEach((receipt, idx) => {
+                    if (!validateReceiptData(receipt)) {
+                        console.warn(`Skipping invalid receipt at index ${idx}`);
+                        return;
+                    }
+
                     const rawDate = receipt.transactionDateTime || receipt.transactionDate; 
                     if(rawDate) availableDates.add(parseLocalData(rawDate).date);
 
@@ -523,7 +586,7 @@
                         currency: 'USD'
                     };
                     
-                    rMeta.currency = currencyMap[rMeta.country] || 'USD';
+                    rMeta.currency = CURRENCY_MAP[rMeta.country] || 'USD';
                     if (receipt.total !== undefined) rMeta.total = receipt.total;
                     else if (receipt.amount !== undefined) rMeta.total = receipt.amount;
 
@@ -543,19 +606,17 @@
                     let dominantTaxRate = 0;
                     let defaultLegend = "Tax";
 
-                    const taxSource = (receipt.subTaxes && (receipt.subTaxes.aTaxPercent || receipt.subTaxes.aTaxAmount)) ? [receipt.subTaxes] : [];
-                    
                     if (receipt.subTaxes && !Array.isArray(receipt.subTaxes)) {
-                         if(receipt.subTaxes.aTaxPercent) {
+                        if(receipt.subTaxes.aTaxPercent) {
                             taxRates["H"] = receipt.subTaxes.aTaxPercent; 
                             if(receipt.subTaxes.aTaxPercent > dominantTaxRate) {
                                 dominantTaxRate = receipt.subTaxes.aTaxPercent;
                                 if(receipt.subTaxes.aTaxLegend) defaultLegend = receipt.subTaxes.aTaxLegend;
                             }
-                         }
-                         if(receipt.subTaxes.bTaxPercent) {
+                        }
+                        if(receipt.subTaxes.bTaxPercent) {
                             if(receipt.subTaxes.bTaxPercent > dominantTaxRate) dominantTaxRate = receipt.subTaxes.bTaxPercent;
-                         }
+                        }
                     } else if (receipt.subTaxes && Array.isArray(receipt.subTaxes)) {
                         receipt.subTaxes.forEach(tax => {
                             const rate = parseFloat(tax.aTaxPercent || tax.percent || tax.rate || tax.taxRate || 0);
@@ -672,12 +733,16 @@
                     }
                 });
 
-                dateFilter.innerHTML = '<option value="">All Dates</option>';
+                if (globalReceipts.length === 0) {
+                    throw new Error('No valid receipts found in file');
+                }
+
+                DOM.dateFilter.innerHTML = '<option value="">All Dates</option>';
                 Array.from(availableDates).sort().reverse().forEach(d => {
                     const option = document.createElement("option");
                     option.value = d;
                     option.text = d;
-                    dateFilter.appendChild(option);
+                    DOM.dateFilter.appendChild(option);
                 });
 
                 const lifetimeSub = lifetimeTotal - lifetimeTax;
@@ -685,42 +750,28 @@
                 globalFlatItems.sort((a, b) => b.date.localeCompare(a.date));
 
                 renderStats(lifetimeTotal, lifetimeSub, lifetimeTax, rawReceipts.length);
-                renderChart();
                 
                 renderedReceiptCount = 0;
-                tbody.innerHTML = '';
+                DOM.tbody.innerHTML = '';
                 loadMoreReceipts(); 
-                initialView.classList.add('d-none');
-                dashboardView.classList.remove('d-none');
+                DOM.initialView.classList.add('d-none');
+                DOM.dashboardView.classList.remove('d-none');
 
             } catch (err) {
-                console.error(err);
-                alert("Error reading file. Check console.");
+                console.error('Processing error:', err);
+                alert(`Error: ${err.message || 'Failed to process file. Check console.'}`);
+                DOM.initialView.classList.remove('d-none');
+                DOM.dashboardView.classList.add('d-none');
             }
         };
         reader.readAsText(file);
     }
 
-    function renderChart() {
-        const salesItems = globalFlatItems.filter(i => i.netAmount > 0);
-        const sortedItems = salesItems.sort((a, b) => b.netAmount - a.netAmount).slice(0, 10);
-        if (chartInstance) chartInstance.destroy();
-        const ctx = document.getElementById('itemsChart').getContext('2d');
-        chartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: sortedItems.map(i => i.description.substring(0, 20) + '...'),
-                datasets: [{ label: 'Net Price', data: sortedItems.map(i => i.netAmount), backgroundColor: '#0d6efd', borderRadius: 4 }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
-        });
-    }
-
     function renderStats(total, sub, tax, count) {
-        document.getElementById('receiptCountLabel').textContent = `${count} Receipts Analyzed`;
-        document.getElementById('displayTotal').textContent = money(total, globalCurrency);
-        document.getElementById('displaySubtotal').textContent = money(sub, globalCurrency);
-        document.getElementById('displayTax').textContent = money(tax, globalCurrency);
+        DOM.receiptCountLabel.textContent = `${count} Receipts Analyzed`;
+        DOM.displayTotal.textContent = money(total, globalCurrency);
+        DOM.displaySubtotal.textContent = money(sub, globalCurrency);
+        DOM.displayTax.textContent = money(tax, globalCurrency);
     }
 
 </script>
