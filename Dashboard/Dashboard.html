@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Costco Receipt Dashboard v0.5.5</title>
+    <title>Costco Receipt Dashboard v0.5.6</title>
     <link rel="icon" href="https://techstud.github.io/TCRDD/favicon.ico" type="image/x-icon">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
@@ -96,6 +96,7 @@
         .rh-col-tax { min-width: 80px; text-align: right; color: #dc3545; }
         .rh-col-total { min-width: 90px; text-align: right; color: #212529; }
         .rh-col-saved { min-width: 100px; text-align: right; color: #198754; margin-left: 10px; }
+        .rh-col-member { min-width: 110px; font-family: monospace; color: #6c757d; font-size: 0.8rem; font-weight: 400; margin-left: 10px; text-align: right; white-space: nowrap; }
 
         #loadMoreBtn { width: 100%; border-radius: 0 0 5px 5px; font-weight: 600; }
 
@@ -148,13 +149,19 @@
                             <option value="">All Dates</option>
                         </select>
                     </div>
+                    <div class="col-auto" id="memberFilterWrapper" style="display:none;">
+                        <select id="memberFilter" class="form-select form-select-sm" onchange="handleSearchOrFilter()" aria-label="Filter by member number">
+                            <option value="">All Members</option>
+                        </select>
+                    </div>
                     <div class="col">
                         <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Search items..." aria-label="Search receipts and items">
                     </div>
-                    <div class="col-auto d-flex">
+                    <div class="col-auto d-flex align-items-center">
                         <button class="filter-btn" id="filterRefund" onclick="toggleFilter('refund')" aria-label="Toggle refunds filter" aria-pressed="false">Refunds</button>
                         <button class="filter-btn" id="filterMarkdown" onclick="toggleFilter('markdown')" aria-label="Toggle markdowns filter" aria-pressed="false">Markdowns</button>
                         <button class="filter-btn" id="filterDiscount" onclick="toggleFilter('discount')" aria-label="Toggle discounts filter" aria-pressed="false">Discounts</button>
+                        <button class="filter-btn" id="clearFiltersBtn" onclick="clearAllFilters()" aria-label="Clear all filters" style="display:none; margin-left:8px; border-color:#adb5bd;">&#10005; Clear</button>
                     </div>
                 </div>
             </div>
@@ -193,6 +200,9 @@
         dashboardView: document.getElementById('dashboard-view'),
         searchInput: document.getElementById('searchInput'),
         dateFilter: document.getElementById('dateFilter'),
+        memberFilter: document.getElementById('memberFilter'),
+        memberFilterWrapper: document.getElementById('memberFilterWrapper'),
+        clearFiltersBtn: document.getElementById('clearFiltersBtn'),
         loadMoreBtn: document.getElementById('loadMoreBtn'),
         tbody: document.getElementById('itemsTableBody'),
         displayTotal: document.getElementById('displayTotal'),
@@ -262,38 +272,64 @@
         handleSearchOrFilter();
     }
 
+    function updateClearBtnVisibility() {
+        const active = DOM.searchInput.value.length > 0
+            || DOM.dateFilter.value.length > 0
+            || DOM.memberFilter.value.length > 0
+            || Object.values(activeFilters).some(v => v);
+        DOM.clearFiltersBtn.style.display = active ? 'inline-block' : 'none';
+    }
+
+    function clearAllFilters() {
+        DOM.searchInput.value = '';
+        DOM.dateFilter.value = '';
+        DOM.memberFilter.value = '';
+        // Deactivate all toggle filters without triggering multiple re-renders
+        Object.keys(activeFilters).forEach(key => {
+            if (activeFilters[key]) {
+                activeFilters[key] = false;
+                const btn = document.getElementById('filter' + key.charAt(0).toUpperCase() + key.slice(1));
+                btn.classList.remove('active-' + key);
+                btn.setAttribute('aria-pressed', 'false');
+            }
+        });
+        handleSearchOrFilter();
+    }
+
     function handleSearchOrFilter() {
         const term = DOM.searchInput.value.toLowerCase();
         const selectedDate = DOM.dateFilter.value;
+        const selectedMember = DOM.memberFilter.value;
         const hasFilters = Object.values(activeFilters).some(v => v);
         const hasSearch = term.length > 0;
+        const hasMember = selectedMember.length > 0;
 
-        if (hasSearch || hasFilters) {
+        if (hasSearch || hasFilters || hasMember) {
             DOM.loadMoreBtn.classList.add('d-none');
-            
             const filtered = globalFlatItems.filter(item => {
                 const itemDate = parseLocalData(item.date).date;
                 if (selectedDate && itemDate !== selectedDate) return false;
-
+                if (hasMember && String(item.membershipNumber) !== selectedMember) return false;
                 if (hasSearch) {
-                    const textMatch = item.description.toLowerCase().includes(term) || 
-                                      String(item.itemNumber).includes(term) || 
+                    const textMatch = item.description.toLowerCase().includes(term) ||
+                                      String(item.itemNumber).includes(term) ||
                                       item.warehouse.toLowerCase().includes(term);
                     if (!textMatch) return false;
                 }
-                
                 if (activeFilters.refund && item.txType !== "Refund") return false;
                 if (activeFilters.markdown && !item.isMarkdown) return false;
                 if (activeFilters.discount && item.discountAmount === 0) return false;
-                
                 return true;
             });
-            renderFlatList(filtered.slice(0, CONFIG.MAX_FILTERED_ITEMS)); 
+            renderFlatList(filtered.slice(0, CONFIG.MAX_FILTERED_ITEMS));
         } else {
-            DOM.tbody.innerHTML = ''; 
+            // Unfiltered / paginated mode — fully reset DOM + counter before re-rendering
+            DOM.tbody.innerHTML = '';
             renderedReceiptCount = 0;
             if (selectedDate) {
-                const dateBatch = globalReceipts.filter(r => parseLocalData(r.meta.fullDateString).date === selectedDate);
+                const dateBatch = globalReceipts.filter(
+                    r => parseLocalData(r.meta.fullDateString).date === selectedDate
+                );
                 renderGroupedList(dateBatch);
                 DOM.loadMoreBtn.classList.add('d-none');
             } else {
@@ -301,6 +337,7 @@
                 loadMoreReceipts();
             }
         }
+        updateClearBtnVisibility();
     }
 
     function loadMoreReceipts() {
@@ -327,6 +364,7 @@
 
             let savingsHtml = ''; 
             if (r.meta.totalSavings > 0) savingsHtml = `Saved: ${money(r.meta.totalSavings, cur)}`;
+            const memberHtml = r.meta.membershipNumber ? `#${escapeHtml(String(r.meta.membershipNumber))}` : '';
 
             const headerRow = `
                 <tr class="receipt-header-row">
@@ -339,6 +377,7 @@
                             <div class="rh-col-tax">Tax: ${money(r.meta.tax, cur)}</div>
                             <div class="rh-col-total">${money(r.meta.total, cur)}</div>
                             <div class="rh-col-saved">${savingsHtml}</div>
+                            <div class="rh-col-member">${memberHtml}</div>
                         </div>
                     </td>
                 </tr>
@@ -530,7 +569,9 @@
     // Debounced search
     DOM.searchInput.addEventListener('keyup', () => {
         clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(handleSearchOrFilter, CONFIG.SEARCH_DEBOUNCE_MS);
+        searchTimeout = setTimeout(() => {
+            handleSearchOrFilter();
+        }, CONFIG.SEARCH_DEBOUNCE_MS);
     });
 
     function processFile(file) {
@@ -575,6 +616,7 @@
                         barcode: receipt.transactionBarcode || "[Missing Barcode]",
                         txType: receipt.transactionType || "Sale",
                         country: receipt.warehouseCountry || "US",
+                        membershipNumber: receipt.membershipNumber || null,
                         total: 0,
                         tax: 0,
                         itemCount: receipt.totalItemCount || 0,
@@ -670,6 +712,7 @@
                                         description: "General Adjustment", itemNumber: "0", originalAmount: 0,
                                         discountAmount: amount, netAmount: amount, txType: rMeta.txType, date: rMeta.fullDateString,
                                         warehouse: rMeta.warehouse, country: rMeta.country, currency: rMeta.currency,
+                                        membershipNumber: rMeta.membershipNumber,
                                         unitPrice: 0, unitQty: 1, taxFlag: "N", taxRate: 0, dept: 0
                                     });
                                 }
@@ -703,6 +746,7 @@
                                     warehouse: rMeta.warehouse,
                                     country: rMeta.country,
                                     currency: rMeta.currency,
+                                    membershipNumber: rMeta.membershipNumber,
                                     unitPrice: unitPrice,
                                     unitQty: unitQty,
                                     taxFlag: taxFlag,
@@ -741,6 +785,21 @@
                     DOM.dateFilter.appendChild(option);
                 });
 
+                // Populate member filter dropdown
+                const memberNums = [...new Set(globalReceipts
+                    .map(r => r.meta.membershipNumber)
+                    .filter(m => m != null)
+                )].sort();
+                DOM.memberFilter.innerHTML = '<option value="">All Members</option>';
+                memberNums.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = String(m);
+                    opt.text = String(m);
+                    DOM.memberFilter.appendChild(opt);
+                });
+                // Show member filter only if there is more than one unique member
+                DOM.memberFilterWrapper.style.display = memberNums.length > 1 ? 'block' : 'none';
+
                 const lifetimeSub = lifetimeTotal - lifetimeTax;
                 globalReceipts.sort((a, b) => b.meta.fullDateString.localeCompare(a.meta.fullDateString));
                 globalFlatItems.sort((a, b) => b.date.localeCompare(a.date));
@@ -749,7 +808,8 @@
                 
                 renderedReceiptCount = 0;
                 DOM.tbody.innerHTML = '';
-                loadMoreReceipts(); 
+                DOM.loadMoreBtn.classList.remove('d-none'); // show first; loadMoreReceipts() will hide if all fit
+                loadMoreReceipts();
                 DOM.initialView.classList.add('d-none');
                 DOM.dashboardView.classList.remove('d-none');
 
