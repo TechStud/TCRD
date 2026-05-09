@@ -169,11 +169,7 @@
     </div>
 
     <div class="container">
-        <div class="row mb-4">
-            <div class="col-md-4"><div class="card stat-card stat-total mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Total</small><h2 id="displayTotal" class="fw-bold">—</h2><small id="displayDuration" class="stat-subtitle"></small></div></div></div>
-            <div class="col-md-4"><div class="card stat-card stat-sub mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Net Items</small><h2 id="displaySubtotal" class="fw-bold">—</h2><small id="displaySubLabel" class="stat-subtitle">Pre-Tax Subtotal</small></div></div></div>
-            <div class="col-md-4"><div class="card stat-card stat-tax mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Tax</small><h2 id="displayTax" class="fw-bold">—</h2><small id="displayTaxRate" class="stat-subtitle"></small></div></div></div>
-        </div>
+
 
         <div class="card shadow-sm mb-3" id="insightsPanel">
             <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
@@ -198,6 +194,11 @@
                     <div class="col-auto" id="memberFilterWrapper" style="display:none;">
                         <select id="memberFilter" class="form-select form-select-sm" onchange="handleSearchOrFilter()" aria-label="Filter by member number">
                             <option value="">All Members</option>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <select id="warehouseFilter" class="form-select form-select-sm" onchange="handleSearchOrFilter()" aria-label="Filter by warehouse">
+                            <option value="">All Warehouses</option>
                         </select>
                     </div>
                     <div class="col">
@@ -251,9 +252,7 @@
         clearFiltersBtn: document.getElementById('clearFiltersBtn'),
         loadMoreBtn: document.getElementById('loadMoreBtn'),
         tbody: document.getElementById('itemsTableBody'),
-        displayTotal: document.getElementById('displayTotal'),
-        displaySubtotal: document.getElementById('displaySubtotal'),
-        displayTax: document.getElementById('displayTax'),
+        warehouseFilter: document.getElementById('warehouseFilter'),
         receiptCountLabel: document.getElementById('receiptCountLabel'),
         insightsToggle: document.getElementById('insightsToggle'),
         insightsBody: document.getElementById('insightsBody'),
@@ -326,6 +325,7 @@
         const active = DOM.searchInput.value.length > 0
             || DOM.dateFilter.value.length > 0
             || DOM.memberFilter.value.length > 0
+            || DOM.warehouseFilter.value.length > 0
             || Object.values(activeFilters).some(v => v);
         DOM.clearFiltersBtn.style.display = active ? 'inline-block' : 'none';
     }
@@ -334,6 +334,7 @@
         DOM.searchInput.value = '';
         DOM.dateFilter.value = '';
         DOM.memberFilter.value = '';
+        DOM.warehouseFilter.value = '';
         // Deactivate all toggle filters without triggering multiple re-renders
         Object.keys(activeFilters).forEach(key => {
             if (activeFilters[key]) {
@@ -347,19 +348,27 @@
     }
 
     function handleSearchOrFilter() {
+        updateDateFilterOptions();
+
         const term = DOM.searchInput.value.toLowerCase();
         const selectedDate = DOM.dateFilter.value;
         const selectedMember = DOM.memberFilter.value;
+        const selectedWarehouse = DOM.warehouseFilter.value;
         const hasFilters = Object.values(activeFilters).some(v => v);
         const hasSearch = term.length > 0;
         const hasMember = selectedMember.length > 0;
+        const hasWarehouse = selectedWarehouse.length > 0;
 
-        if (hasSearch || hasFilters || hasMember) {
+        if (hasSearch || hasFilters || hasMember || hasWarehouse) {
             DOM.loadMoreBtn.classList.add('d-none');
             const filtered = globalFlatItems.filter(item => {
                 const itemDate = parseLocalData(item.date).date;
                 if (selectedDate && itemDate !== selectedDate) return false;
                 if (hasMember && String(item.membershipNumber) !== selectedMember) return false;
+                if (hasWarehouse) {
+                    const whKey = `${item.country} - ${item.warehouseState} - ${item.warehouse}`;
+                    if (whKey !== selectedWarehouse) return false;
+                }
                 if (hasSearch) {
                     const textMatch = item.description.toLowerCase().includes(term) ||
                                       String(item.itemNumber).includes(term) ||
@@ -388,6 +397,51 @@
             }
         }
         updateClearBtnVisibility();
+    }
+
+    function updateDateFilterOptions() {
+        const selectedDate = DOM.dateFilter.value;
+        const selectedMember = DOM.memberFilter.value;
+        const selectedWarehouse = DOM.warehouseFilter.value;
+        const term = DOM.searchInput.value.toLowerCase();
+        const hasFilters = Object.values(activeFilters).some(v => v);
+
+        // Find which dates actually have matching receipts given the OTHER filters
+        const matchingDates = new Set();
+        globalReceipts.forEach(r => {
+            if (selectedMember && String(r.meta.membershipNumber) !== selectedMember) return;
+            if (selectedWarehouse) {
+                const whKey = `${r.meta.country} - ${r.meta.warehouseState} - ${r.meta.warehouse}`;
+                if (whKey !== selectedWarehouse) return;
+            }
+            if (term) {
+                const textMatch = r.meta.warehouse.toLowerCase().includes(term) ||
+                                  r.meta.barcode.toLowerCase().includes(term);
+                const itemsMatch = r.items.some(item => 
+                    item.description.toLowerCase().includes(term) || 
+                    String(item.itemNumber).includes(term)
+                );
+                if (!textMatch && !itemsMatch) return;
+            }
+            if (activeFilters.refund && r.meta.txType !== "Refund") return;
+            if (activeFilters.markdown && !r.items.some(i => i.isMarkdown)) return;
+            if (activeFilters.discount && !r.items.some(i => i.discountAmount !== 0)) return;
+
+            matchingDates.add(parseLocalData(r.meta.fullDateString).date);
+        });
+
+        const sortedDates = Array.from(matchingDates).sort((a, b) => b.localeCompare(a));
+        
+        // Only update if the list has changed to avoid unnecessary DOM thrashing
+        // (Simplified check: just re-populate but try to preserve selection)
+        DOM.dateFilter.innerHTML = '<option value="">All Dates</option>';
+        sortedDates.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d;
+            opt.textContent = d;
+            if (d === selectedDate) opt.selected = true;
+            DOM.dateFilter.appendChild(opt);
+        });
     }
 
     function loadMoreReceipts() {
@@ -663,6 +717,7 @@
                     const rMeta = {
                         fullDateString: rawDate, 
                         warehouse: receipt.warehouseName || "Unknown",
+                        warehouseState: receipt.warehouseState || "",
                         barcode: receipt.transactionBarcode || "[Missing Barcode]",
                         txType: receipt.transactionType || "Sale",
                         country: receipt.warehouseCountry || "US",
@@ -794,6 +849,7 @@
                                     txType: rMeta.txType,
                                     date: rMeta.fullDateString,
                                     warehouse: rMeta.warehouse,
+                                    warehouseState: rMeta.warehouseState,
                                     country: rMeta.country,
                                     currency: rMeta.currency,
                                     membershipNumber: rMeta.membershipNumber,
@@ -850,11 +906,26 @@
                 // Show member filter only if there is more than one unique member
                 DOM.memberFilterWrapper.style.display = memberNums.length > 1 ? 'block' : 'none';
 
-                const lifetimeSub = lifetimeTotal - lifetimeTax;
                 globalReceipts.sort((a, b) => b.meta.fullDateString.localeCompare(a.meta.fullDateString));
                 globalFlatItems.sort((a, b) => b.date.localeCompare(a.date));
 
-                renderStats(lifetimeTotal, lifetimeSub, lifetimeTax, rawReceipts.length, globalReceipts);
+                // Populate Warehouse Filter
+                const whSet = new Set();
+                globalReceipts.forEach(r => {
+                    const country = r.meta.country || "US";
+                    const state = r.meta.warehouseState || "??";
+                    const name = r.meta.warehouse || "Unknown";
+                    whSet.add(`${country} - ${state} - ${name}`);
+                });
+                const warehouses = Array.from(whSet).sort();
+                DOM.warehouseFilter.innerHTML = '<option value="">All Warehouses</option>';
+                warehouses.forEach(wh => {
+                    const opt = document.createElement('option');
+                    opt.value = wh;
+                    opt.textContent = wh;
+                    DOM.warehouseFilter.appendChild(opt);
+                });
+
                 renderInsights();
                 
                 renderedReceiptCount = 0;
@@ -886,42 +957,7 @@
     }
 
 
-    function renderStats(total, sub, tax, count, receipts) {
-        DOM.receiptCountLabel.textContent = `${count} Receipts Analyzed`;
-        DOM.displayTotal.textContent = money(total, globalCurrency);
-        DOM.displaySubtotal.textContent = money(sub, globalCurrency);
-        DOM.displayTax.textContent = money(tax, globalCurrency);
 
-        // Duration subtitle
-        if (receipts && receipts.length > 1) {
-            const dates = receipts
-                .map(r => r.meta.fullDateString)
-                .filter(d => d)
-                .sort();
-            if (dates.length >= 2) {
-                const first = new Date(dates[0]);
-                const last = new Date(dates[dates.length - 1]);
-                const diffMs = last - first;
-                const weeks = diffMs / (1000 * 60 * 60 * 24 * 7);
-                document.getElementById('displayDuration').textContent =
-                    `${receipts.length} Receipts over ${formatDuration(weeks)}`;
-            }
-        } else if (receipts && receipts.length === 1) {
-            document.getElementById('displayDuration').textContent = '1 Receipt';
-        }
-
-        // Effective tax rate — computed against taxable items only
-        if (tax > 0) {
-            const taxableSub = globalFlatItems.reduce((sum, item) => {
-                return item.taxRate > 0 ? sum + Math.abs(item.netAmount) : sum;
-            }, 0);
-            if (taxableSub > 0) {
-                const rate = (tax / taxableSub) * 100;
-                document.getElementById('displayTaxRate').textContent =
-                    `Effective Rate: ${rate.toFixed(1)}% (on taxable items)`;
-            }
-        }
-    }
 
     // --- INSIGHTS PANEL ---
     const INSIGHTS_KEY = 'tcrdd_insights_collapsed';
