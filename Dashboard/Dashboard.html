@@ -169,11 +169,7 @@
     </div>
 
     <div class="container">
-        <div class="row mb-4">
-            <div class="col-md-4"><div class="card stat-card stat-total mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Total</small><h2 id="displayTotal" class="fw-bold">—</h2><small id="displayDuration" class="stat-subtitle"></small></div></div></div>
-            <div class="col-md-4"><div class="card stat-card stat-sub mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Net Items</small><h2 id="displaySubtotal" class="fw-bold">—</h2><small id="displaySubLabel" class="stat-subtitle">Pre-Tax Subtotal</small></div></div></div>
-            <div class="col-md-4"><div class="card stat-card stat-tax mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Tax</small><h2 id="displayTax" class="fw-bold">—</h2><small id="displayTaxRate" class="stat-subtitle"></small></div></div></div>
-        </div>
+
 
         <div class="card shadow-sm mb-3" id="insightsPanel">
             <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
@@ -251,9 +247,6 @@
         clearFiltersBtn: document.getElementById('clearFiltersBtn'),
         loadMoreBtn: document.getElementById('loadMoreBtn'),
         tbody: document.getElementById('itemsTableBody'),
-        displayTotal: document.getElementById('displayTotal'),
-        displaySubtotal: document.getElementById('displaySubtotal'),
-        displayTax: document.getElementById('displayTax'),
         receiptCountLabel: document.getElementById('receiptCountLabel'),
         insightsToggle: document.getElementById('insightsToggle'),
         insightsBody: document.getElementById('insightsBody'),
@@ -850,11 +843,9 @@
                 // Show member filter only if there is more than one unique member
                 DOM.memberFilterWrapper.style.display = memberNums.length > 1 ? 'block' : 'none';
 
-                const lifetimeSub = lifetimeTotal - lifetimeTax;
                 globalReceipts.sort((a, b) => b.meta.fullDateString.localeCompare(a.meta.fullDateString));
                 globalFlatItems.sort((a, b) => b.date.localeCompare(a.date));
 
-                renderStats(lifetimeTotal, lifetimeSub, lifetimeTax, rawReceipts.length, globalReceipts);
                 renderInsights();
                 
                 renderedReceiptCount = 0;
@@ -885,42 +876,7 @@
         return `${Math.round(weeks)} weeks [${approx}]`;
     }
 
-    function renderStats(total, sub, tax, count, receipts) {
-        DOM.receiptCountLabel.textContent = `${count} Receipts Analyzed`;
-        DOM.displayTotal.textContent = money(total, globalCurrency);
-        DOM.displaySubtotal.textContent = money(sub, globalCurrency);
-        DOM.displayTax.textContent = money(tax, globalCurrency);
 
-        // Duration subtitle
-        if (receipts && receipts.length > 1) {
-            const dates = receipts
-                .map(r => r.meta.fullDateString)
-                .filter(d => d)
-                .sort();
-            if (dates.length >= 2) {
-                const first = new Date(dates[0]);
-                const last = new Date(dates[dates.length - 1]);
-                const diffMs = last - first;
-                const weeks = diffMs / (1000 * 60 * 60 * 24 * 7);
-                document.getElementById('displayDuration').textContent =
-                    `${receipts.length} Receipts over ${formatDuration(weeks)}`;
-            }
-        } else if (receipts && receipts.length === 1) {
-            document.getElementById('displayDuration').textContent = '1 Receipt';
-        }
-
-        // Effective tax rate — computed against taxable items only
-        if (tax > 0) {
-            const taxableSub = globalFlatItems.reduce((sum, item) => {
-                return item.taxRate > 0 ? sum + Math.abs(item.netAmount) : sum;
-            }, 0);
-            if (taxableSub > 0) {
-                const rate = (tax / taxableSub) * 100;
-                document.getElementById('displayTaxRate').textContent =
-                    `Effective Rate: ${rate.toFixed(1)}% (on taxable items)`;
-            }
-        }
-    }
 
     // --- INSIGHTS PANEL ---
     const INSIGHTS_KEY = 'tcrdd_insights_collapsed';
@@ -946,6 +902,24 @@
         const items = globalFlatItems;
         if (!receipts.length) return;
 
+        const cur = globalCurrency;
+        DOM.receiptCountLabel.textContent = `${receipts.length} Receipts Analyzed`;
+
+        // --- Duration Calculation ---
+        let durationText = null;
+        if (receipts.length > 1) {
+            const dates = receipts.map(r => r.meta.fullDateString).filter(d => d).sort();
+            if (dates.length >= 2) {
+                const first = new Date(dates[0]);
+                const last = new Date(dates[dates.length - 1]);
+                const diffMs = last - first;
+                const weeks = diffMs / (1000 * 60 * 60 * 24 * 7);
+                durationText = `over ${formatDuration(weeks)}`;
+            }
+        } else {
+            durationText = 'Single Receipt';
+        }
+
         // --- Group 1: Shopping Activity ---
         const uniqueMembers = new Set(receipts.map(r => r.meta.membershipNumber).filter(m => m != null));
         const uniqueWarehouses = new Set(receipts.map(r => r.meta.warehouse));
@@ -962,6 +936,7 @@
         html += '<div class="stat-group-title">Shopping Activity</div>';
         html += '<div class="stat-tiles">';
 
+        html += buildTile('Total Receipts', receipts.length, durationText);
         html += buildTile('Members', uniqueMembers.size, null);
         html += buildTile('Warehouses', uniqueWarehouses.size + countryNote, null);
         html += buildTile('Items Purchased', saleItems.length.toLocaleString(), `${uniqueSaleItemNums.size.toLocaleString()} Unique`);
@@ -981,8 +956,6 @@
         const taxableItems = items.filter(i => i.taxRate > 0);
         const nonTaxableItems = items.filter(i => i.taxRate === 0);
 
-        const cur = globalCurrency;
-
         html += '<div class="stat-group-title" style="margin-top:16px;">Deals & Savings</div>';
         html += '<div class="stat-tiles">';
 
@@ -997,6 +970,18 @@
         const lifetimePreTax = receipts.reduce((s, r) => s + (r.meta.total - r.meta.tax), 0);
         const lifetimeTaxTotal = receipts.reduce((s, r) => s + r.meta.tax, 0);
         const lifetimeFinal = receipts.reduce((s, r) => s + r.meta.total, 0);
+
+        // Effective Tax Rate
+        let taxRateText = null;
+        if (lifetimeTaxTotal > 0) {
+            const taxableSub = items.reduce((sum, item) => {
+                return item.taxRate > 0 ? sum + Math.abs(item.netAmount) : sum;
+            }, 0);
+            if (taxableSub > 0) {
+                const rate = (lifetimeTaxTotal / taxableSub) * 100;
+                taxRateText = `Effective Rate: ${rate.toFixed(1)}%`;
+            }
+        }
 
         // Year-over-year
         const now = new Date();
@@ -1035,8 +1020,9 @@
         html += '<div class="stat-group-title" style="margin-top:16px;">Spending</div>';
         html += '<div class="stat-tiles">';
 
-        html += buildTile('Total Spend', money(lifetimeFinal, cur),
-            `Pre-Tax: ${money(lifetimePreTax, cur)} · Tax: ${money(lifetimeTaxTotal, cur)}`);
+        html += buildTile('Lifetime Total', money(lifetimeFinal, cur), null);
+        html += buildTile('Lifetime Net', money(lifetimePreTax, cur), 'Pre-Tax Subtotal');
+        html += buildTile('Lifetime Tax', money(lifetimeTaxTotal, cur), taxRateText);
 
         let yoyDetail = '';
         if (prevYearSpend > 0) {
