@@ -20,6 +20,7 @@
         .stat-total { border-color: #0d6efd; }
         .stat-tax { border-color: #dc3545; }
         .stat-sub { border-color: #198754; }
+        .stat-subtitle { display: block; font-size: 0.75rem; color: #6c757d; margin-top: 2px; font-weight: 400; }
 
         /* Filter Controls */
         .filter-btn { font-size: 0.75rem; border-radius: 20px; padding: 4px 12px; margin-left: 5px; border: 1px solid #dee2e6; background-color: white; color: #6c757d; cursor: pointer; transition: all 0.2s ease; }
@@ -136,9 +137,9 @@
 
     <div class="container">
         <div class="row mb-4">
-            <div class="col-md-4"><div class="card stat-card stat-total mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Total</small><h2 id="displayTotal" class="fw-bold">—</h2></div></div></div>
-            <div class="col-md-4"><div class="card stat-card stat-sub mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Net Items</small><h2 id="displaySubtotal" class="fw-bold">—</h2></div></div></div>
-            <div class="col-md-4"><div class="card stat-card stat-tax mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Tax</small><h2 id="displayTax" class="fw-bold">—</h2></div></div></div>
+            <div class="col-md-4"><div class="card stat-card stat-total mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Total</small><h2 id="displayTotal" class="fw-bold">—</h2><small id="displayDuration" class="stat-subtitle"></small></div></div></div>
+            <div class="col-md-4"><div class="card stat-card stat-sub mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Net Items</small><h2 id="displaySubtotal" class="fw-bold">—</h2><small id="displaySubLabel" class="stat-subtitle">Pre-Tax Subtotal</small></div></div></div>
+            <div class="col-md-4"><div class="card stat-card stat-tax mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Tax</small><h2 id="displayTax" class="fw-bold">—</h2><small id="displayTaxRate" class="stat-subtitle"></small></div></div></div>
         </div>
 
         <div class="card shadow-sm mb-4">
@@ -805,7 +806,7 @@
                 globalReceipts.sort((a, b) => b.meta.fullDateString.localeCompare(a.meta.fullDateString));
                 globalFlatItems.sort((a, b) => b.date.localeCompare(a.date));
 
-                renderStats(lifetimeTotal, lifetimeSub, lifetimeTax, rawReceipts.length);
+                renderStats(lifetimeTotal, lifetimeSub, lifetimeTax, rawReceipts.length, globalReceipts);
                 
                 renderedReceiptCount = 0;
                 DOM.tbody.innerHTML = '';
@@ -824,11 +825,52 @@
         reader.readAsText(file);
     }
 
-    function renderStats(total, sub, tax, count) {
+    function formatDuration(weeks) {
+        if (weeks < 1) return 'less than a week';
+        const years = Math.floor(weeks / 52);
+        const remainingMonths = Math.round((weeks % 52) / 4.33);
+        let approx = '';
+        if (years > 0 && remainingMonths > 0) approx = `~${years}y ${remainingMonths}m`;
+        else if (years > 0) approx = `~${years}y`;
+        else approx = `~${remainingMonths}m`;
+        return `${Math.round(weeks)} weeks [${approx}]`;
+    }
+
+    function renderStats(total, sub, tax, count, receipts) {
         DOM.receiptCountLabel.textContent = `${count} Receipts Analyzed`;
         DOM.displayTotal.textContent = money(total, globalCurrency);
         DOM.displaySubtotal.textContent = money(sub, globalCurrency);
         DOM.displayTax.textContent = money(tax, globalCurrency);
+
+        // Duration subtitle
+        if (receipts && receipts.length > 1) {
+            const dates = receipts
+                .map(r => r.meta.fullDateString)
+                .filter(d => d)
+                .sort();
+            if (dates.length >= 2) {
+                const first = new Date(dates[0]);
+                const last = new Date(dates[dates.length - 1]);
+                const diffMs = last - first;
+                const weeks = diffMs / (1000 * 60 * 60 * 24 * 7);
+                document.getElementById('displayDuration').textContent =
+                    `${receipts.length} Receipts over ${formatDuration(weeks)}`;
+            }
+        } else if (receipts && receipts.length === 1) {
+            document.getElementById('displayDuration').textContent = '1 Receipt';
+        }
+
+        // Effective tax rate — computed against taxable items only
+        if (tax > 0) {
+            const taxableSub = globalFlatItems.reduce((sum, item) => {
+                return item.taxRate > 0 ? sum + Math.abs(item.netAmount) : sum;
+            }, 0);
+            if (taxableSub > 0) {
+                const rate = (tax / taxableSub) * 100;
+                document.getElementById('displayTaxRate').textContent =
+                    `Effective Rate: ${rate.toFixed(1)}% (on taxable items)`;
+            }
+        }
     }
 
 </script>
