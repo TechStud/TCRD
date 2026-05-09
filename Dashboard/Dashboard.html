@@ -104,6 +104,39 @@
         /* Loading indicator */
         .loading-spinner { display: inline-block; width: 1rem; height: 1rem; border: 2px solid #f3f3f3; border-top: 2px solid #0d6efd; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 0.5rem; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- INSIGHTS PANEL --- */
+        .insights-toggle {
+            background: none; border: 1px solid #dee2e6; border-radius: 6px; padding: 4px 14px;
+            font-size: 0.8rem; font-weight: 600; color: #6c757d; cursor: pointer;
+            transition: all 0.2s ease; display: flex; align-items: center; gap: 6px;
+        }
+        .insights-toggle:hover { background-color: #f8f9fa; color: #495057; }
+        .insights-toggle .chevron { transition: transform 0.3s ease; display: inline-block; font-size: 0.65rem; }
+        .insights-toggle.collapsed .chevron { transform: rotate(-90deg); }
+
+        .insights-body { overflow: hidden; transition: max-height 0.35s ease, opacity 0.25s ease; max-height: 1200px; opacity: 1; }
+        .insights-body.collapsed { max-height: 0; opacity: 0; }
+
+        .stat-group-title {
+            font-size: 0.7rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;
+            color: #adb5bd; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #f0f0f0;
+        }
+        .stat-tiles { display: flex; flex-wrap: wrap; gap: 10px; }
+        .stat-tile {
+            background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px;
+            padding: 10px 16px; min-width: 160px; flex: 1 1 160px; max-width: 260px;
+        }
+        .stat-tile-label { font-size: 0.7rem; color: #6c757d; text-transform: uppercase; font-weight: 600; letter-spacing: 0.3px; margin-bottom: 2px; }
+        .stat-tile-value { font-size: 1.1rem; font-weight: 700; color: #212529; line-height: 1.2; }
+        .stat-tile-detail { font-size: 0.72rem; color: #6c757d; margin-top: 1px; }
+
+        .stat-tile-wide { flex: 1 1 100%; max-width: 100%; }
+        .sparkline-container { margin-top: 8px; }
+        .sparkline-bar { fill: #0d6efd; rx: 2; transition: opacity 0.15s; }
+        .sparkline-bar:hover { opacity: 0.7; }
+        .sparkline-label { font-size: 9px; fill: #adb5bd; text-anchor: middle; }
+        .sparkline-val { font-size: 9px; fill: #495057; text-anchor: middle; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -140,6 +173,18 @@
             <div class="col-md-4"><div class="card stat-card stat-total mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Total</small><h2 id="displayTotal" class="fw-bold">—</h2><small id="displayDuration" class="stat-subtitle"></small></div></div></div>
             <div class="col-md-4"><div class="card stat-card stat-sub mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Net Items</small><h2 id="displaySubtotal" class="fw-bold">—</h2><small id="displaySubLabel" class="stat-subtitle">Pre-Tax Subtotal</small></div></div></div>
             <div class="col-md-4"><div class="card stat-card stat-tax mb-2"><div class="card-body"><small class="text-muted text-uppercase fw-bold">Lifetime Tax</small><h2 id="displayTax" class="fw-bold">—</h2><small id="displayTaxRate" class="stat-subtitle"></small></div></div></div>
+        </div>
+
+        <div class="card shadow-sm mb-3" id="insightsPanel">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+                <span class="fw-bold" style="font-size:0.9rem;">Insights</span>
+                <button class="insights-toggle" id="insightsToggle" onclick="toggleInsights()" aria-label="Toggle insights panel">
+                    <span class="chevron">&#9660;</span> <span id="insightsToggleLabel">Hide</span>
+                </button>
+            </div>
+            <div class="insights-body" id="insightsBody">
+                <div class="card-body py-3" id="insightsContent"></div>
+            </div>
         </div>
 
         <div class="card shadow-sm mb-4">
@@ -209,7 +254,11 @@
         displayTotal: document.getElementById('displayTotal'),
         displaySubtotal: document.getElementById('displaySubtotal'),
         displayTax: document.getElementById('displayTax'),
-        receiptCountLabel: document.getElementById('receiptCountLabel')
+        receiptCountLabel: document.getElementById('receiptCountLabel'),
+        insightsToggle: document.getElementById('insightsToggle'),
+        insightsBody: document.getElementById('insightsBody'),
+        insightsContent: document.getElementById('insightsContent'),
+        insightsToggleLabel: document.getElementById('insightsToggleLabel')
     };
 
     // --- State ---
@@ -807,6 +856,7 @@
                 globalFlatItems.sort((a, b) => b.date.localeCompare(a.date));
 
                 renderStats(lifetimeTotal, lifetimeSub, lifetimeTax, rawReceipts.length, globalReceipts);
+                renderInsights();
                 
                 renderedReceiptCount = 0;
                 DOM.tbody.innerHTML = '';
@@ -871,6 +921,179 @@
                     `Effective Rate: ${rate.toFixed(1)}% (on taxable items)`;
             }
         }
+    }
+
+    // --- INSIGHTS PANEL ---
+    const INSIGHTS_KEY = 'tcrdd_insights_collapsed';
+
+    function toggleInsights() {
+        const isCollapsed = DOM.insightsBody.classList.toggle('collapsed');
+        DOM.insightsToggle.classList.toggle('collapsed', isCollapsed);
+        DOM.insightsToggleLabel.textContent = isCollapsed ? 'Show' : 'Hide';
+        localStorage.setItem(INSIGHTS_KEY, isCollapsed ? '1' : '0');
+    }
+
+    // Restore collapse state on load
+    (function restoreInsightsState() {
+        if (localStorage.getItem(INSIGHTS_KEY) === '1') {
+            DOM.insightsBody.classList.add('collapsed');
+            DOM.insightsToggle.classList.add('collapsed');
+            DOM.insightsToggleLabel.textContent = 'Show';
+        }
+    })();
+
+    function renderInsights() {
+        const receipts = globalReceipts;
+        const items = globalFlatItems;
+        if (!receipts.length) return;
+
+        // --- Group 1: Shopping Activity ---
+        const uniqueMembers = new Set(receipts.map(r => r.meta.membershipNumber).filter(m => m != null));
+        const uniqueWarehouses = new Set(receipts.map(r => r.meta.warehouse));
+        const uniqueCountries = new Set(receipts.map(r => r.meta.country));
+
+        const saleItems = items.filter(i => i.txType !== 'Refund');
+        const refundItems = items.filter(i => i.txType === 'Refund');
+        const uniqueSaleItemNums = new Set(saleItems.map(i => i.itemNumber));
+        const uniqueRefundItemNums = new Set(refundItems.map(i => i.itemNumber));
+
+        const countryNote = uniqueCountries.size > 1 ? ` (${uniqueCountries.size} Countries)` : '';
+
+        let html = '';
+        html += '<div class="stat-group-title">Shopping Activity</div>';
+        html += '<div class="stat-tiles">';
+
+        html += buildTile('Members', uniqueMembers.size, null);
+        html += buildTile('Warehouses', uniqueWarehouses.size + countryNote, null);
+        html += buildTile('Items Purchased', saleItems.length.toLocaleString(), `${uniqueSaleItemNums.size.toLocaleString()} Unique`);
+        html += buildTile('Items Returned', refundItems.length.toLocaleString(), refundItems.length > 0 ? `${uniqueRefundItemNums.size.toLocaleString()} Unique` : null);
+
+        html += '</div>';
+
+        // --- Group 2: Deals & Savings ---
+        const discountedItems = saleItems.filter(i => i.discountAmount !== 0);
+        const totalSaved = discountedItems.reduce((sum, i) => sum + Math.abs(i.discountAmount), 0);
+        const markdownItems = saleItems.filter(i => i.isMarkdown);
+        const kirklandItems = saleItems.filter(i => {
+            const d = i.description.toUpperCase();
+            return d.startsWith('KS ') || d.includes('KIRKLAND');
+        });
+        const uniqueKirkland = new Set(kirklandItems.map(i => i.itemNumber));
+        const taxableItems = items.filter(i => i.taxRate > 0);
+        const nonTaxableItems = items.filter(i => i.taxRate === 0);
+
+        const cur = globalCurrency;
+
+        html += '<div class="stat-group-title" style="margin-top:16px;">Deals & Savings</div>';
+        html += '<div class="stat-tiles">';
+
+        html += buildTile('Discounted Items', discountedItems.length.toLocaleString(), totalSaved > 0 ? `Saved ${money(totalSaved, cur)}` : null);
+        html += buildTile('Markdown Items', markdownItems.length.toLocaleString(), null);
+        html += buildTile('Kirkland Signature', kirklandItems.length.toLocaleString(), `${uniqueKirkland.size.toLocaleString()} Unique`);
+        html += buildTile('Taxable / Non-Taxable', `${taxableItems.length.toLocaleString()} / ${nonTaxableItems.length.toLocaleString()}`, null);
+
+        html += '</div>';
+
+        // --- Group 3: Spending ---
+        const lifetimePreTax = receipts.reduce((s, r) => s + (r.meta.total - r.meta.tax), 0);
+        const lifetimeTaxTotal = receipts.reduce((s, r) => s + r.meta.tax, 0);
+        const lifetimeFinal = receipts.reduce((s, r) => s + r.meta.total, 0);
+
+        // Year-over-year
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const prevYear = currentYear - 1;
+        const receiptsByYear = (yr) => receipts.filter(r => {
+            const d = r.meta.fullDateString;
+            return d && d.startsWith(String(yr));
+        });
+        const currentYearReceipts = receiptsByYear(currentYear);
+        const prevYearReceipts = receiptsByYear(prevYear);
+        const currentYearSpend = currentYearReceipts.reduce((s, r) => s + r.meta.total, 0);
+        const prevYearSpend = prevYearReceipts.reduce((s, r) => s + r.meta.total, 0);
+
+        // Avg spend (current year)
+        let avgWeekly = 0, avgMonthly = 0;
+        if (currentYearReceipts.length > 0) {
+            const cyDates = currentYearReceipts.map(r => r.meta.fullDateString).filter(d => d).sort();
+            const cyFirst = new Date(cyDates[0]);
+            const cyEnd = now < new Date(currentYear + 1, 0, 1) ? now : new Date(currentYear, 11, 31);
+            const cyWeeks = Math.max(1, (cyEnd - cyFirst) / (1000 * 60 * 60 * 24 * 7));
+            const cyMonths = Math.max(1, cyWeeks / 4.33);
+            avgWeekly = currentYearSpend / cyWeeks;
+            avgMonthly = currentYearSpend / cyMonths;
+        }
+
+        // Monthly spend data for sparkline (current year)
+        const monthlySpend = new Array(12).fill(0);
+        currentYearReceipts.forEach(r => {
+            if (r.meta.fullDateString) {
+                const m = parseInt(r.meta.fullDateString.substring(5, 7), 10) - 1;
+                if (m >= 0 && m < 12) monthlySpend[m] += r.meta.total;
+            }
+        });
+
+        html += '<div class="stat-group-title" style="margin-top:16px;">Spending</div>';
+        html += '<div class="stat-tiles">';
+
+        html += buildTile('Total Spend', money(lifetimeFinal, cur),
+            `Pre-Tax: ${money(lifetimePreTax, cur)} · Tax: ${money(lifetimeTaxTotal, cur)}`);
+
+        let yoyDetail = '';
+        if (prevYearSpend > 0) {
+            const diff = currentYearSpend - prevYearSpend;
+            const pct = ((diff / prevYearSpend) * 100).toFixed(1);
+            const arrow = diff >= 0 ? '▲' : '▼';
+            yoyDetail = `${prevYear}: ${money(prevYearSpend, cur)} (${arrow} ${Math.abs(pct)}%)`;
+        }
+        html += buildTile(`${currentYear} Spend`, money(currentYearSpend, cur), yoyDetail || null);
+
+        html += buildTile(`Avg Spend (${currentYear})`, `${money(avgWeekly, cur)}/wk`,
+            `${money(avgMonthly, cur)}/mo`);
+
+        // Sparkline tile (wide)
+        html += `<div class="stat-tile stat-tile-wide">
+            <div class="stat-tile-label">Monthly Spend (${currentYear})</div>
+            <div class="sparkline-container">${buildSparkline(monthlySpend, cur)}</div>
+        </div>`;
+
+        html += '</div>';
+
+        DOM.insightsContent.innerHTML = html;
+    }
+
+    function buildTile(label, value, detail) {
+        let detailHtml = detail ? `<div class="stat-tile-detail">${escapeHtml(String(detail))}</div>` : '';
+        return `
+            <div class="stat-tile">
+                <div class="stat-tile-label">${escapeHtml(label)}</div>
+                <div class="stat-tile-value">${escapeHtml(String(value))}</div>
+                ${detailHtml}
+            </div>
+        `;
+    }
+
+    function buildSparkline(monthlyData, cur) {
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const maxVal = Math.max(...monthlyData, 1);
+        const barW = 28, gap = 6, maxBarH = 60, labelH = 14, valH = 14;
+        const totalW = monthlyData.length * (barW + gap) - gap;
+        const svgH = maxBarH + labelH + valH + 6;
+
+        let bars = '';
+        monthlyData.forEach((val, i) => {
+            const x = i * (barW + gap);
+            const barH = Math.max(1, (val / maxVal) * maxBarH);
+            const y = valH + maxBarH - barH;
+            const opacity = val === 0 ? 0.15 : 1;
+            const valText = val > 0 ? money(val, cur) : '';
+
+            bars += `<rect class="sparkline-bar" x="${x}" y="${y}" width="${barW}" height="${barH}" style="opacity:${opacity}"/>`;
+            if (valText) bars += `<text class="sparkline-val" x="${x + barW/2}" y="${y - 3}">${valText}</text>`;
+            bars += `<text class="sparkline-label" x="${x + barW/2}" y="${svgH}">${months[i]}</text>`;
+        });
+
+        return `<svg width="100%" viewBox="0 0 ${totalW} ${svgH + 2}" preserveAspectRatio="xMinYMid meet" style="max-width:${totalW}px;">${bars}</svg>`;
     }
 
 </script>
