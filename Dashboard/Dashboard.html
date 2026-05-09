@@ -137,6 +137,18 @@
         .sparkline-bar:hover { opacity: 0.7; }
         .sparkline-label { font-size: 9px; fill: #adb5bd; text-anchor: middle; }
         .sparkline-val { font-size: 9px; fill: #495057; text-anchor: middle; font-weight: 600; }
+
+        /* --- MOBILE TWEAKS --- */
+        #searchInput { min-width: 130px; } /* Width equivalent to 'WAREHOUSE' */
+        
+        @media (max-width: 768px) {
+            .container { padding-left: 10px; padding-right: 10px; }
+            .filter-row { row-gap: 10px; }
+            .filter-col-search { flex: 1 1 100%; order: 10; }
+            .stat-tile { min-width: 140px; }
+            /* Allow table to scroll horizontally without breaking container */
+            .table-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        }
     </style>
 </head>
 <body>
@@ -185,7 +197,7 @@
 
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-white fw-bold">
-                <div class="row g-2 align-items-center">
+                <div class="row g-2 align-items-center filter-row">
                     <div class="col-auto">
                         <select id="dateFilter" class="form-select form-select-sm" onchange="handleSearchOrFilter()" aria-label="Filter by date">
                             <option value="">All Dates</option>
@@ -201,10 +213,10 @@
                             <option value="">All Warehouses</option>
                         </select>
                     </div>
-                    <div class="col">
+                    <div class="col filter-col-search">
                         <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Search items..." aria-label="Search receipts and items">
                     </div>
-                    <div class="col-auto d-flex align-items-center">
+                    <div class="col-auto d-flex align-items-center flex-wrap gap-1">
                         <button class="filter-btn" id="filterRefund" onclick="toggleFilter('refund')" aria-label="Toggle refunds filter" aria-pressed="false">Refunds</button>
                         <button class="filter-btn" id="filterMarkdown" onclick="toggleFilter('markdown')" aria-label="Toggle markdowns filter" aria-pressed="false">Markdowns</button>
                         <button class="filter-btn" id="filterDiscount" onclick="toggleFilter('discount')" aria-label="Toggle discounts filter" aria-pressed="false">Discounts</button>
@@ -212,12 +224,12 @@
                     </div>
                 </div>
             </div>
-            <div class="card-body p-0">
+            <div class="card-body p-0 table-container">
                 <table class="table table-hover mb-0" role="grid">
                     <tbody id="itemsTableBody"></tbody>
                 </table>
-                <button id="loadMoreBtn" class="btn btn-light text-primary d-none w-100" onclick="loadMoreReceipts()" aria-label="Load more receipts">Load More Receipts</button>
             </div>
+            <button id="loadMoreBtn" class="btn btn-light text-primary d-none w-100" onclick="loadMoreReceipts()" aria-label="Load more receipts">Load More Receipts</button>
         </div>
     </div>
 </div>
