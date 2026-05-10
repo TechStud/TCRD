@@ -360,7 +360,7 @@
     }
 
     function handleSearchOrFilter() {
-        updateDateFilterOptions();
+        updateFilterOptions();
 
         const term = DOM.searchInput.value.toLowerCase();
         const selectedDate = DOM.dateFilter.value;
@@ -411,48 +411,86 @@
         updateClearBtnVisibility();
     }
 
-    function updateDateFilterOptions() {
-        const selectedDate = DOM.dateFilter.value;
-        const selectedMember = DOM.memberFilter.value;
-        const selectedWarehouse = DOM.warehouseFilter.value;
+    function updateFilterOptions() {
+        const selDate = DOM.dateFilter.value;
+        const selMember = DOM.memberFilter.value;
+        const selWH = DOM.warehouseFilter.value;
         const term = DOM.searchInput.value.toLowerCase();
-        const hasFilters = Object.values(activeFilters).some(v => v);
-
-        // Find which dates actually have matching receipts given the OTHER filters
-        const matchingDates = new Set();
-        globalReceipts.forEach(r => {
-            if (selectedMember && String(r.meta.membershipNumber) !== selectedMember) return;
-            if (selectedWarehouse) {
-                const whKey = `${r.meta.country} - ${r.meta.warehouseState} - ${r.meta.warehouse}`;
-                if (whKey !== selectedWarehouse) return;
-            }
-            if (term) {
-                const textMatch = r.meta.warehouse.toLowerCase().includes(term) ||
-                                  r.meta.barcode.toLowerCase().includes(term);
-                const itemsMatch = r.items.some(item => 
-                    item.description.toLowerCase().includes(term) || 
-                    String(item.itemNumber).includes(term)
-                );
-                if (!textMatch && !itemsMatch) return;
-            }
-            if (activeFilters.refund && r.meta.txType !== "Refund") return;
-            if (activeFilters.markdown && !r.items.some(i => i.isMarkdown)) return;
-            if (activeFilters.discount && !r.items.some(i => i.discountAmount !== 0)) return;
-
-            matchingDates.add(parseLocalData(r.meta.fullDateString).date);
-        });
-
-        const sortedDates = Array.from(matchingDates).sort((a, b) => b.localeCompare(a));
         
-        // Only update if the list has changed to avoid unnecessary DOM thrashing
-        // (Simplified check: just re-populate but try to preserve selection)
-        DOM.dateFilter.innerHTML = '<option value="">All Dates</option>';
-        sortedDates.forEach(d => {
+        const filterState = {
+            date: selDate,
+            member: selMember,
+            wh: selWH,
+            search: term,
+            refunds: activeFilters.refund,
+            markdowns: activeFilters.markdown,
+            discounts: activeFilters.discount
+        };
+
+        const matches = (r, state) => {
+            if (state.date && parseLocalData(r.meta.fullDateString).date !== state.date) return false;
+            if (state.member && String(r.meta.membershipNumber) !== state.member) return false;
+            if (state.wh) {
+                const rWh = `${r.meta.country} - ${r.meta.warehouseState} - ${r.meta.warehouse}`;
+                if (rWh !== state.wh) return false;
+            }
+            if (state.search) {
+                const textMatch = r.meta.warehouse.toLowerCase().includes(state.search) ||
+                                  r.meta.barcode.toLowerCase().includes(state.search);
+                const itemsMatch = r.items.some(item => 
+                    item.description.toLowerCase().includes(state.search) || 
+                    String(item.itemNumber).includes(state.search)
+                );
+                if (!textMatch && !itemsMatch) return false;
+            }
+            if (state.refunds && r.meta.txType !== "Refund") return false;
+            if (state.markdowns && !r.items.some(i => i.isMarkdown)) return false;
+            if (state.discounts && !r.items.some(i => i.discountAmount !== 0)) return false;
+            return true;
+        };
+
+        // 1. Update Date Options
+        const dateOptions = new Set();
+        globalReceipts.forEach(r => {
+            if (matches(r, { ...filterState, date: null })) {
+                dateOptions.add(parseLocalData(r.meta.fullDateString).date);
+            }
+        });
+        updateDropdown(DOM.dateFilter, Array.from(dateOptions).sort((a,b) => b.localeCompare(a)), selDate, 'All Dates');
+
+        // 2. Update Member Options
+        const memberOptions = new Set();
+        globalReceipts.forEach(r => {
+            if (matches(r, { ...filterState, member: null })) {
+                if (r.meta.membershipNumber) memberOptions.add(String(r.meta.membershipNumber));
+            }
+        });
+        updateDropdown(DOM.memberFilter, Array.from(memberOptions).sort(), selMember, 'All Members');
+        DOM.memberFilterWrapper.style.display = (memberOptions.size > 1 || selMember) ? 'block' : 'none';
+
+        // 3. Update Warehouse Options
+        const whOptions = new Set();
+        globalReceipts.forEach(r => {
+            if (matches(r, { ...filterState, wh: null })) {
+                whOptions.add(`${r.meta.country} - ${r.meta.warehouseState} - ${r.meta.warehouse}`);
+            }
+        });
+        updateDropdown(DOM.warehouseFilter, Array.from(whOptions).sort(), selWH, 'All Warehouses');
+    }
+
+    function updateDropdown(el, options, selectedValue, defaultText) {
+        const currentOptions = Array.from(el.options).map(o => o.value).filter(v => v !== '');
+        if (JSON.stringify(currentOptions) === JSON.stringify(options)) {
+            el.value = selectedValue;
+            return;
+        }
+        el.innerHTML = `<option value="">${defaultText}</option>`;
+        options.forEach(val => {
             const opt = document.createElement('option');
-            opt.value = d;
-            opt.textContent = d;
-            if (d === selectedDate) opt.selected = true;
-            DOM.dateFilter.appendChild(opt);
+            opt.value = val;
+            opt.textContent = val;
+            if (val === selectedValue) opt.selected = true;
+            el.appendChild(opt);
         });
     }
 
@@ -921,23 +959,7 @@
                 globalReceipts.sort((a, b) => b.meta.fullDateString.localeCompare(a.meta.fullDateString));
                 globalFlatItems.sort((a, b) => b.date.localeCompare(a.date));
 
-                // Populate Warehouse Filter
-                const whSet = new Set();
-                globalReceipts.forEach(r => {
-                    const country = r.meta.country || "US";
-                    const state = r.meta.warehouseState || "??";
-                    const name = r.meta.warehouse || "Unknown";
-                    whSet.add(`${country} - ${state} - ${name}`);
-                });
-                const warehouses = Array.from(whSet).sort();
-                DOM.warehouseFilter.innerHTML = '<option value="">All Warehouses</option>';
-                warehouses.forEach(wh => {
-                    const opt = document.createElement('option');
-                    opt.value = wh;
-                    opt.textContent = wh;
-                    DOM.warehouseFilter.appendChild(opt);
-                });
-
+                updateFilterOptions();
                 renderInsights();
                 
                 renderedReceiptCount = 0;
